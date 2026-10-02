@@ -10,6 +10,10 @@ One self-contained `index.html`, with no build step. Google Fonts is optional; s
 
 Drag horizontally on the water to steer, or use A/D or the arrow keys. W/S or ▲/▼ change sails. Tap ⚓ DROP ANCHOR (keyboard X) to brake and hold position; tap ⚓ RAISE ANCHOR to resume sailing with your existing sail setting. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
 
+## Endless ocean
+
+The map wraps horizontally and vertically. Sail off the right edge to enter from the left, or off the top to enter from the bottom (and vice versa). Speed, heading, hull, cargo and anchor state are preserved. The camera follows smoothly, scenery and territory continue across the seam, and cannon fire and navigation take the shortest route across the map. The minimap still shows your position on the full chart.
+
 ## Treasure and scoring
 
 A match lasts 2 minutes 30 seconds. Each 1% of sea controlled is worth 1 point. Collect a chest by sailing over it, then return to your own colored HOME dock to bank 2 bonus points. Royal treasure is worth 4. Each captain can bank at most 8 treasure points, so controlling territory still matters. Results show sea points and banked gold separately.
@@ -36,7 +40,7 @@ Serve this directory with any static HTTP server, or open `index.html` directly.
 node tests/gameplay.cjs
 ```
 
-The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
+The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, all four map edges and corners, cross-edge cannon hits and territory, camera continuity, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
 
 ## Deployment
 
