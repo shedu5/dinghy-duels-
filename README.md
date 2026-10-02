@@ -8,7 +8,7 @@ One self-contained `index.html`, with no build step. Google Fonts is optional; s
 
 ## Controls
 
-Drag horizontally on the water to steer, or use A/D or the arrow keys. W/S or ▲/▼ change sails. Tap ⚓ DROP ANCHOR (keyboard X) to brake and hold position; tap ⚓ RAISE ANCHOR to resume sailing with your existing sail setting. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
+Drag the bottom-left thumbstick toward the direction you want to sail; release to hold your current course. You can also drag on the water to bring up a floating thumbstick. Touch steering uses compass direction, not relative rudder displacement. The boat begins turning immediately, including at low speed. Use your other thumb for guns and sails. A/D or the arrow keys still turn left/right. Interrupted touches, screen rotation, sinking, and focus loss clear steering input. W/S or ▲/▼ change sails. Tap ⚓ DROP ANCHOR (keyboard X) to brake and hold position; tap ⚓ RAISE ANCHOR to resume sailing with your existing sail setting. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
 
 ## Endless ocean
 
@@ -40,7 +40,7 @@ Serve this directory with any static HTTP server, or open `index.html` directly.
 node tests/gameplay.cjs
 ```
 
-The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, all four map edges and corners, cross-edge cannon hits and territory, camera continuity, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
+The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, thumbstick direction and release, low-speed turn response, independent second-finger gun/sail controls, cancellation and focus loss, all four map edges and corners, cross-edge cannon hits and territory, camera continuity, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
 
 ## Deployment
 

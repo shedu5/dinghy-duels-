@@ -69,8 +69,13 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 #toast small{display:block;font-family:var(--font-flavor);font-style:italic;font-size:.55em;color:var(--bone-dim);margin-top:4px;letter-spacing:0}
 
 .hud-bottom{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end}
-#wheel{width:116px;height:116px;opacity:.92;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
-#wheel svg{width:100%;height:100%;transition:transform .08s linear}
+#wheel{position:relative;width:132px;height:132px;flex-shrink:0;pointer-events:auto;touch-action:none;border-radius:50%;background:rgba(7,24,33,.55);box-shadow:0 0 0 1px rgba(239,227,198,.25);filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+#wheel svg{width:100%;height:100%;opacity:.38;pointer-events:none}
+.helm-knob{position:absolute;left:50%;top:50%;width:42px;height:42px;border-radius:50%;box-sizing:border-box;border:2px solid #f7df9a;background:rgba(194,141,45,.85);transform:translate(calc(-50% + var(--jx,0px)),calc(-50% + var(--jy,0px)));box-shadow:0 3px 8px #0008;pointer-events:none}
+#wheel.active{box-shadow:0 0 0 2px #e2ab3c,0 0 24px #e2ab3c40}
+.helm-label{position:absolute;left:0;right:0;bottom:8px;text-align:center;color:#fff1cf;font-size:11px;font-weight:700;letter-spacing:.08em;pointer-events:none}
+#touchhelm{position:fixed;width:108px;height:108px;border:2px solid #e2ab3c88;border-radius:50%;background:#071f2f55;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
+
 #anchor{min-width:130px;min-height:44px;border:2px solid #dfc99a;border-radius:24px;background:rgba(21,18,13,.85);padding:8px 14px;font-size:16px;font-weight:700;pointer-events:auto}#anchor[aria-pressed="true"]{background:#215946;border-color:#91e4aa;color:#d5ffe4}#anchor:disabled{opacity:.45}
 .rightctl{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .sails{display:flex;align-items:center;gap:8px;pointer-events:auto}
@@ -127,6 +132,10 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 @media (prefers-reduced-motion:reduce){ .share i{transition:none} #toast{transition:none} }
 </style>
 
+<style>#hint{top:170px;font-size:11px}
+@media(max-width:400px){.windbox{width:76px}#minimap{width:68px;height:68px}.hud-top{gap:7px}#mute{top:90px}}
+@media(max-width:360px){#wheel{width:116px;height:116px}.fire button{width:78px;height:78px}.fire{gap:8px}}
+@media(max-height:480px){#wheel{width:108px;height:108px}.fire button{width:66px;height:66px}.rightctl{gap:6px}.sails button{width:40px;height:40px}#anchor{min-height:38px;padding:5px 10px}}</style>
 <div id="app">
   <canvas id="game"></canvas>
 
@@ -140,7 +149,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
     <div id="hint">In irons: turn across the wind</div>
     <div id="toast"></div>
     <div class="hud-bottom">
-      <div id="wheel">
+      <div id="wheel" role="group" aria-label="Steering joystick: drag toward the direction you want to sail">
         <svg viewBox="-60 -60 120 120" aria-hidden="true">
           <g stroke="#efe3c6" stroke-width="4" stroke-linecap="round" fill="none">
             <line x1="0" y1="-56" x2="0" y2="56"/><line x1="-56" y1="0" x2="56" y2="0"/>
@@ -154,6 +163,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
             <circle cx="39.6" cy="39.6" r="4.5"/><circle cx="-39.6" cy="-39.6" r="4.5"/><circle cx="39.6" cy="-39.6" r="4.5"/><circle cx="-39.6" cy="39.6" r="4.5"/>
           </g>
         </svg>
+        <div class="helm-knob"></div><div class="helm-label">DRAG TO STEER</div>
       </div>
       <div class="rightctl">
         <button id="anchor" type="button" aria-label="Drop anchor" aria-pressed="false">⚓ DROP ANCHOR</button>
@@ -170,6 +180,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
     </div>
   </div>
 
+  <div id="touchhelm" hidden aria-hidden="true"><div class="helm-knob"></div></div>
   <div id="title" class="screen">
     <div class="eyebrow">Age of Sail · Territory War</div>
     <h1>Dinghy Duels</h1>
@@ -179,7 +190,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
     <div class="shipname" id="shipname"></div>
     <button class="cta" id="start" type="button">SET SAIL</button>
     <div class="howto">
-      <b>Steer</b><span>Drag anywhere on the water. Arrow keys work too. Sail off any edge to reappear on the opposite side.</span>
+      <b>Steer</b><span>Drag the thumbstick toward the direction you want to sail. Release to hold course. You can also drag on the water or use A/D and arrow keys. The map wraps at every edge.</span>
       <b>Wind</b><span>Sail across the wind for speed. Point into it and you stall, in irons.</span>
       <b>Guns</b><span>Cannons fire to the sides. Drop sails to steady your aim. Moving fast, your window is a blink.</span>
       <b>Treasure</b><span>Collect gold chests and return HOME. Cargo drops when sunk. Gold carriers glow on the chart.</span><b>Repair</b><span>Tap ⚓ DROP ANCHOR inside any dock ring to stop and repair. Tap RAISE ANCHOR to sail again. Lowering all sails also works. Hits pause repairs.</span><b>Kraken</b><span>Royal treasure appears at the center. Escape red water before it strikes, or shoot a tentacle to open a green safe gap.</span><b>Win</b><span>1% sea = 1 point. Delivered chests add 2 points (royal: 4), capped at 8. Highest total at the bell wins.</span>
@@ -223,7 +234,7 @@ const store = {
 // ============================================================ config
 const WORLD = 2400, CELL = 12, GRID = WORLD / CELL, TERR_SCALE = 0.5;
 const SHIP_R = 15, HULL_HALF_LEN = 30, HULL_HALF_W = 12;
-const MAX_SPEED = 175, MAX_TURN = 1.45;
+const MAX_SPEED = 175, MAX_TURN = 2.6;
 const RANGE = 300, BALL_SPEED = 430, BALL_DMG = 11, BALLS = 5, RELOAD = 3.2, ARC = 10 * DEG;
 const BRUSH = 28, SINK_SPLASH = 85, MATCH_TIME = 150, FINAL_STRETCH = 30;
 const COLORS = [
@@ -310,18 +321,50 @@ const buzz = ms => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch
 
 // ============================================================ input
 const Input = {
-  rudder: 0, steerId: null, sx: 0, keys: {}, fire: [false, false, false], sailDelta: 0, touched: false,
+  steerId: null, originX: 0, originY: 0, heading: null, capture: null, floating: false,
+  keys: {}, fire: [false, false, false], sailDelta: 0,
+  moveSteer(e) {
+    if (e.pointerId !== this.steerId) return;
+    const dx=e.clientX-this.originX, dy=e.clientY-this.originY, length=Math.hypot(dx,dy);
+    // A small center dead zone avoids jitter; the stick requests a compass heading, not a turn rate.
+    this.heading=length>=6?Math.atan2(dy,dx):null;
+    const scale=length>42?42/length:1;
+    for(const control of [$('wheel'),$('touchhelm')]) {
+      control.style.setProperty('--jx',(dx*scale).toFixed(1)+'px');
+      control.style.setProperty('--jy',(dy*scale).toFixed(1)+'px');
+    }
+    e.preventDefault();
+  },
+  releaseSteer(e) {
+    if(e && e.pointerId!==this.steerId)return;
+    const target=this.capture,id=this.steerId;
+    this.steerId=null;this.capture=null;this.heading=null;this.floating=false;
+    $('wheel').classList.remove('active');$('touchhelm').hidden=true;
+    for(const control of [$('wheel'),$('touchhelm')]){control.style.setProperty('--jx','0px');control.style.setProperty('--jy','0px');}
+    try{if(target && id!==null && target.hasPointerCapture(id))target.releasePointerCapture(id);}catch(_){}
+  },
+  reset() { this.releaseSteer();this.keys={};this.fire=[false,false,false];this.sailDelta=0; },
   init(canvas) {
-    canvas.addEventListener('pointerdown', e => {
-      if (this.steerId !== null) return;
-      this.steerId = e.pointerId; this.sx = e.clientX; this.rudder = 0; this.touched = true;
-      try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
-      e.preventDefault();
-    });
-    const move = e => { if (e.pointerId !== this.steerId) return; this.rudder = clamp((e.clientX - this.sx) / 70, -1, 1); };
-    const up = e => { if (e.pointerId !== this.steerId) return; this.steerId = null; this.rudder = 0; };
-    canvas.addEventListener('pointermove', move);
-    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); canvas.addEventListener('lostpointercapture', up);
+    const wheel=$('wheel');
+    for(const target of [wheel,canvas]) {
+      target.addEventListener('pointerdown',e=>{
+        if(state!=='play'||!player||player.sunk||this.steerId!==null||(e.pointerType==='mouse'&&e.button!==0))return;
+        this.steerId=e.pointerId;this.capture=target;this.floating=target===canvas;
+        const rect=wheel.getBoundingClientRect();
+        this.originX=this.floating?e.clientX:rect.left+rect.width/2;
+        this.originY=this.floating?e.clientY:rect.top+rect.height/2;
+        $('wheel').classList.add('active');
+        const overlay=$('touchhelm');overlay.hidden=!this.floating;
+        overlay.style.left=this.originX+'px';overlay.style.top=this.originY+'px';
+        try{target.setPointerCapture(e.pointerId);}catch(_){}
+        this.moveSteer(e);
+      });
+      target.addEventListener('pointermove',e=>this.moveSteer(e));
+      for(const name of ['pointerup','pointercancel','lostpointercapture'])target.addEventListener(name,e=>this.releaseSteer(e));
+    }
+    window.addEventListener('blur',()=>this.reset());
+    window.addEventListener('resize',()=>this.releaseSteer());
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.reset();});
     window.addEventListener('keydown', e => {
       if (e.target && /INPUT|TEXTAREA|BUTTON/.test(e.target.tagName) && e.code === 'Space') return;
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
@@ -438,9 +481,14 @@ function updateShip(s, dt) {
   s.phi = Math.abs(adiff(s.heading, wind.dir + Math.PI)); s.polar = polar(s.phi);
   const tgt = s.anchored ? 0 : MAX_SPEED * wind.strength * s.polar * s.sailSet;
   s.speed += (tgt - s.speed) * clamp(dt * (s.anchored ? 4 : tgt > s.speed ? 0.9 : 0.75), 0, 1);
-  const turnF = 0.4 + 0.6 * clamp(s.speed / (MAX_SPEED * 0.5), 0, 1);
-  s.heading = norm(s.heading + (s.anchored ? 0 : MAX_TURN * s.rudder * turnF * dt));
-  s.speed -= s.speed * 0.22 * Math.abs(s.rudder) * dt;
+  const turnF = 0.85 + 0.15 * clamp(s.speed / (MAX_SPEED * 0.5), 0, 1);
+  let turn = s.anchored ? 0 : MAX_TURN * s.rudder * turnF * dt;
+  if (s.isPlayer && s.aimHeading != null) {
+    const error = adiff(s.aimHeading,s.heading);
+    if (Math.abs(turn)>Math.abs(error)) turn=error;
+  }
+  s.heading = norm(s.heading + turn);
+  s.speed -= s.speed * 0.12 * Math.abs(s.rudder) * dt;
   if (s.anchored && s.speed < 0.5) s.speed = 0;
   const driftK = s.anchored ? 0 : (6 + 8 * (1 - s.sailSet)) * wind.strength;
   s.x += Math.cos(s.heading) * s.speed * dt + wind.vx * driftK * dt;
@@ -498,6 +546,7 @@ function damage(s, dmg, by) {
   if (s.hp <= 0) sink(s, by);
 }
 function sink(s, by) {
+  if(s.isPlayer) Input.reset();
   s.sunk = true; s.sinkT = 4.5; s.deaths++; s.speed = 0; s.hp = 0;
   if (s.cargo) { treasure.push({x:s.x,y:s.y,value:s.cargo.value,readyAt:simTime+1}); s.cargo=null; }
   if (!by && s.isPlayer) toast('The kraken sank you', 'Cargo dropped · returning in a moment');
@@ -512,6 +561,7 @@ function sink(s, by) {
   }
 }
 function respawn(s) {
+  if(s.isPlayer) Input.reset(); s.aimHeading=null;
   const p = clearSpot(380); s.x = p.x; s.y = p.y; s.heading = rand(TAU);
   s.anchored = false; s.sunk = false; s.hp = 100; s.invuln = 2.5; s.sailLevel = 2; s.sailSet = 0.2; s.speed = 0; s.roll = 0; s.alpha = 1; s.scale = 1; s.reload = [1, 1];
   if (s.brain) s.brain.reset();
@@ -813,9 +863,9 @@ function toggleAnchor() {
   player.anchored = !player.anchored; SFX.ui();
 }
 function controlPlayer(dt) {
-  const s = player; if (!s || s.sunk) { Input.fire = [false, false, false]; Input.sailDelta = 0; return; }
-  const kr = Input.keyRudder();
-  s.rudder = Input.steerId !== null ? Input.rudder : kr;
+  const s = player; if (!s || s.sunk) { Input.reset(); return; }
+  s.aimHeading=Input.steerId!==null?Input.heading:null;
+  s.rudder=Input.steerId!==null?(s.aimHeading===null?0:clamp(adiff(s.aimHeading,s.heading)*4,-1,1)):Input.keyRudder();
   if (Input.sailDelta) { const nl = clamp(s.sailLevel + Input.sailDelta, 0, 2); if (nl !== s.sailLevel) { s.sailLevel = nl; SFX.sail(Input.sailDelta > 0); } Input.sailDelta = 0; }
   for (let side = 0; side < 2; side++) {
     s.lock[side] = false; const sa = s.side(side);
@@ -834,6 +884,7 @@ function controlPlayer(dt) {
 
 // ============================================================ match flow
 function setupWorld(withPlayer, colorIdx) {
+  Input.reset();
   resetToasts();
   islands = makeIslands(); ships = []; balls = []; particles = [];
   terr = new Territory();
@@ -891,6 +942,7 @@ function startMatch() {
   }, 900);
 }
 function endMatch() {
+  Input.reset();
   resetToasts();
   state = 'results'; showScreen('results');
   const ranked = ships.slice().sort((a, b) => totalScore(b) - totalScore(a) || terr.counts[b.owner] - terr.counts[a.owner]);
@@ -1133,7 +1185,7 @@ function updateHUD() {
   const irons = !s.sunk && s.phi < 33 * DEG && s.sailLevel > 0 && s.speed < 30;
   el.pos.textContent = s.sunk ? 'Sunk\n' + knots() + ' kn' : pointOfSail(s.phi) + '\n' + knots() + ' kn'; el.pos.classList.toggle('irons', irons);
   el.hint.classList.toggle('show', irons);
-  el.wheel.style.transform = 'rotate(' + (s.rudder * 70).toFixed(1) + 'deg)';
+  // The visible thumbstick follows touch position directly; release holds the current course.
   for (let i = 0; i < 3; i++) el.sailind.children[i].classList.toggle('on', i < s.sailLevel);
   for (const [b, side] of [[el.fireL, 0], [el.fireR, 1]]) {
     const cd = 1 - s.reload[side] / RELOAD; b.style.setProperty('--cd', cd.toFixed(3));

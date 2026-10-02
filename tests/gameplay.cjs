@@ -1,9 +1,9 @@
 const vm=require('node:vm'), fs=require('node:fs'), assert=require('node:assert/strict');
 const noop=()=>{};const ctx=new Proxy({createLinearGradient:()=>({addColorStop:noop}),createRadialGradient:()=>({addColorStop:noop}),createPattern:()=>({})},{get:(t,p)=>t[p]||noop,set:(t,p,v)=>(t[p]=v,true)});
-const elements={};function el(){return {style:{setProperty:noop},classList:{add:noop,remove:noop,toggle:noop},children:[],appendChild(v){this.children.push(v)},append:noop,querySelector:()=>el(),setAttribute:noop,addEventListener:noop,getContext:()=>ctx,width:168,height:168,clientWidth:720,clientHeight:786,dataset:{},hidden:false,innerHTML:''};}
+const elements={};function el(){return {listeners:{},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn)},emit(name,e){for(const fn of this.listeners[name]||[])fn(e)},getBoundingClientRect:()=>({left:0,top:0,width:132,height:132}),setPointerCapture:noop,hasPointerCapture:()=>true,releasePointerCapture:noop,style:{setProperty:noop},classList:{add:noop,remove:noop,toggle:noop},children:[],appendChild(v){this.children.push(v)},append:noop,querySelector:()=>el(),setAttribute:noop,getContext:()=>ctx,width:168,height:168,clientWidth:720,clientHeight:786,dataset:{},hidden:false,innerHTML:''};}
 const document={getElementById:id=>elements[id]||=el(),createElement:el,createTextNode:t=>({textContent:t}),body:el(),addEventListener:noop};
-const sandbox={document,window:{addEventListener:noop,devicePixelRatio:1,innerWidth:720,innerHeight:786},localStorage:{getItem:()=>null,setItem:noop},navigator:{},performance:{now:()=>0},setTimeout:noop,setInterval:noop,clearInterval:noop,clearTimeout:noop,requestAnimationFrame:noop,getComputedStyle:()=>({fontFamily:'sans-serif'}),console,Math,Uint8Array,Int32Array};
-let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={setupWorld,step,updateAdventure,updateShip,updateBalls,shipCollisions,delta,bearing,resize,cam,wind,get balls(){return balls},toggleAnchor,damage,respawn,hitTentacle,totalScore,render,adventureHUD,endMatch,buildShareBar,get ships(){return ships},get treasure(){return treasure},get docks(){return docks},get kraken(){return kraken},get time(){return matchT},get state(){return state},get terr(){return terr},setTime(t){simTime=t},play(){state='play'}};})();`);
+const windowEvents={};const sandbox={document,window:{addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn),devicePixelRatio:1,innerWidth:720,innerHeight:786},localStorage:{getItem:()=>null,setItem:noop},navigator:{},performance:{now:()=>0},setTimeout:noop,setInterval:noop,clearInterval:noop,clearTimeout:noop,requestAnimationFrame:noop,getComputedStyle:()=>({fontFamily:'sans-serif'}),console,Math,Uint8Array,Int32Array};
+let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={setupWorld,step,updateAdventure,updateShip,Input,controlPlayer,bind,updateBalls,shipCollisions,delta,bearing,resize,cam,wind,get balls(){return balls},toggleAnchor,damage,respawn,hitTentacle,totalScore,render,adventureHUD,endMatch,buildShareBar,get ships(){return ships},get treasure(){return treasure},get docks(){return docks},get kraken(){return kraken},get time(){return matchT},get state(){return state},get terr(){return terr},setTime(t){simTime=t},play(){state='play'}};})();`);
 vm.createContext(sandbox);vm.runInContext(source,sandbox);const g=sandbox.test;
 function setup(){g.setupWorld(true,0);g.buildShareBar();g.play();return g.ships[0]}
 let s=setup();assert.equal(g.docks.length,5);assert.ok(g.treasure.length>=3);
@@ -50,6 +50,25 @@ for(const vertical of [false,true]) {
 s=setup();s.x=2;s.y=1200;s.speed=0;s.anchored=true;g.cam.x=2398;g.cam.y=1200;g.step(.01);assert.ok(Math.abs(g.delta(g.cam.x-2398))<10);
 const bot=g.ships[1];bot.x=2390;bot.y=100;assert.equal(bot.brain.probe(0,150),false);
 g.resize();for(const x of [1,2399])for(const y of [1,2399]){g.cam.x=x;g.cam.y=y;g.render(0);}
+// Real pointer handlers: visible helm, direct heading, low-speed turn and multitouch isolation.
+s=setup();s.x=1200;s.y=1200;s.heading=0;s.speed=0;s.sailLevel=0;
+const input=g.Input;input.init(elements.game);g.bind('fireL',()=>input.fire[0]=true);g.bind('sailUp',()=>input.sailDelta=1);
+const event=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',button:0,preventDefault:noop});
+elements.wheel.emit('pointerdown',event(10,66,66));assert.equal(input.heading,null);
+elements.wheel.emit('pointermove',event(10,66,24));assert.equal(input.heading,-Math.PI/2);
+g.controlPlayer(1/60);assert.equal(s.rudder,-1);g.updateShip(s,1/60);assert.ok(s.heading<-.03);
+// A second finger can fire or change sails without taking ownership of the helm.
+elements.fireL.emit('pointerdown',event(20,300,700));elements.sailUp.emit('pointerdown',event(21,300,600));assert.equal(input.steerId,10);g.controlPlayer(1/60);assert.ok(g.balls.length>0);assert.equal(s.sailLevel,1);
+elements.game.emit('pointerdown',event(22,100,100));assert.equal(input.steerId,10);
+elements.wheel.emit('pointerup',event(20,66,24));assert.equal(input.steerId,10);
+for(let i=0;i<90;i++){g.controlPlayer(1/60);g.updateShip(s,1/60)}assert.ok(Math.abs(s.heading+Math.PI/2)<.015,'Helm converges promptly without overshoot');
+elements.wheel.emit('pointerup',event(10,66,24));g.controlPlayer(1/60);const held=s.heading;g.updateShip(s,1/60);assert.equal(s.heading,held);assert.equal(input.steerId,null);
+// Water drag gets a floating origin and cancellation/focus loss cannot leave steering stuck.
+elements.game.emit('pointerdown',event(30,200,200));assert.equal(input.heading,null);
+elements.game.emit('pointermove',event(30,242,200));assert.equal(input.heading,0);
+elements.game.emit('pointercancel',event(30,242,200));assert.equal(input.steerId,null);
+elements.wheel.emit('pointerdown',event(40,108,66));elements.wheel.emit('lostpointercapture',event(40,108,66));assert.equal(input.steerId,null);
+elements.wheel.emit('pointerdown',event(50,108,66));input.keys.KeyD=true;for(const fn of windowEvents.blur)fn();assert.equal(input.steerId,null);assert.equal(input.keyRudder(),0);
 // Full-length simulated match: all bots participate, finite scores, clean end and restart.
 s=setup();for(let i=0;i<9002;i++){g.step(1/60);if(i%120===0){g.render(i/60);g.adventureHUD(s);}}
 assert.equal(g.state,'results');assert.equal(g.time,0);for(const o of g.ships){assert.ok(Number.isFinite(g.totalScore(o)));assert.ok(o.gold<=8);assert.ok(o.hp>=0&&o.hp<=100)}
