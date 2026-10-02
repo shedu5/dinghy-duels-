@@ -9,7 +9,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Dinghy Duels: an age-of-sail territory battle. Paint the sea with your wake, fire broadsides, rule the wind.">
 <style>[hidden]{display:none!important}html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}</style>
-</head>
+<style>
+.statusbox{width:100%;max-width:280px;font-size:14px;font-weight:700;text-align:center;text-shadow:0 1px 3px #000}
+.hulltrack{height:6px;background:#241c23;border-radius:4px;overflow:hidden;margin:4px 0}
+#hullfill{height:100%;width:100%;background:#91e4aa;transition:width .15s}
+#scoretext{color:#ffe094;margin-top:3px}#objective{max-width:320px;color:#efe3c6;font-size:14px;line-height:1.25;min-height:30px}
+#hint{top:174px;font-size:12px}.howto{margin-top:16px;gap:7px 12px;font-size:14px}.tagline{margin-bottom:14px}.foot{margin-top:16px}
+@media(max-height:740px){#title{justify-content:flex-start;padding-top:20px}#title h1{font-size:clamp(40px,13vw,70px)}.howto{margin-top:14px}.cta{margin-top:12px;padding:11px 30px}.tagline{font-size:18px;margin-bottom:10px}}
+@media(max-width:400px){.windbox{width:76px}#minimap{width:68px;height:68px}.hud-top{gap:7px}#objective{font-size:12px}#scoretext{font-size:12px}#mute{top:90px}}
+</style></head>
 <body>
 <title>Dinghy Duels</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,7 +119,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 .row .rk{font-weight:700;color:var(--bone-dim);font-variant-numeric:tabular-nums}
 .row .sw{width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 .row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .nm small{display:block;font-size:12px;color:var(--bone-dim);letter-spacing:.08em;text-transform:uppercase}
+.row .nm small{white-space:normal;display:block;font-size:12px;color:var(--bone-dim);letter-spacing:.08em;text-transform:uppercase}
 .row .pct{font-weight:700;font-variant-numeric:tabular-nums;font-size:22px}
 .btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 @media (max-height:520px){ h1{font-size:clamp(40px,10vh,70px)} .howto{display:none} .tagline{margin-bottom:8px} }
@@ -124,7 +132,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
   <div id="hud" hidden>
     <div class="hud-top">
       <div class="windbox"><canvas id="windc" width="144" height="144"></canvas><div id="pos">Beam reach</div></div>
-      <div class="center"><div id="timer">2:30</div><div class="share" id="sharebar"></div></div>
+      <div class="center"><div id="timer">2:30</div><div class="share" id="sharebar" aria-label="Territory share"></div><div class="statusbox"><div id="hulltext">HULL 100</div><div class="hulltrack"><div id="hullfill"></div></div><div id="scoretext"></div></div><div id="objective"></div></div>
       <canvas id="minimap" width="168" height="168"></canvas>
     </div>
     <button id="mute" type="button" aria-label="Toggle sound">🔊</button>
@@ -172,7 +180,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
       <b>Steer</b><span>Drag anywhere on the water. Arrow keys work too.</span>
       <b>Wind</b><span>Sail across the wind for speed. Point into it and you stall, in irons.</span>
       <b>Guns</b><span>Cannons fire to the sides. Drop sails to steady your aim. Moving fast, your window is a blink.</span>
-      <b>Win</b><span>Your wake claims the sea. Most sea when the bell rings wins. Sinking a rival splashes your color where she went down.</span>
+      <b>Treasure</b><span>Collect gold chests and return HOME. Cargo drops when sunk. Gold carriers glow on the chart.</span><b>Repair</b><span>Drop all sails inside any dock ring to repair. Taking damage pauses repairs.</span><b>Kraken</b><span>Royal treasure appears at the center. Escape red water before it strikes, or shoot a tentacle to open a green safe gap.</span><b>Win</b><span>1% sea = 1 point. Delivered chests add 2 points (royal: 4), capped at 8. Highest total at the bell wins.</span>
     </div>
     <div class="foot"><span id="best"></span><button id="soundbtn" type="button">Sound on</button></div>
   </div>
@@ -437,7 +445,7 @@ function updateShip(s, dt) {
     s.speed -= s.speed * 5 * dt; s.grounded = true;
   } else s.grounded = false;
   s.reload[0] = Math.max(0, s.reload[0] - dt); s.reload[1] = Math.max(0, s.reload[1] - dt);
-  s.hp = Math.min(100, s.hp + (s.sailLevel === 0 ? 3 : s.sailLevel === 1 ? 1 : 0.3) * dt);
+  // Hull repairs require a dock; damage matters between visits.
   if (s.speed > 10) {
     terr.paint(s.x - Math.cos(s.heading) * 14, s.y - Math.sin(s.heading) * 14, BRUSH, s.owner, s.color);
     const k = s.speed / MAX_SPEED;
@@ -473,12 +481,15 @@ function fire(s, side) {
 
 function damage(s, dmg, by) {
   if (s.sunk || s.invuln > 0) return;
-  s.hp -= dmg; s.flash = 0.18;
+  s.hp -= dmg; s.flash = 0.3; s.lastDamage = simTime;
+  floatText(s, '-' + dmg + ' HULL', s.isPlayer ? '#ff8b89' : '#fff1bf');
   if (s.isPlayer) { cam.shake = Math.max(cam.shake, 5); buzz(35); }
   if (s.hp <= 0) sink(s, by);
 }
 function sink(s, by) {
   s.sunk = true; s.sinkT = 4.5; s.deaths++; s.speed = 0; s.hp = 0;
+  if (s.cargo) { treasure.push({x:s.x,y:s.y,value:s.cargo.value,readyAt:simTime+1}); s.cargo=null; }
+  if (!by && s.isPlayer) toast('The kraken sank you', 'Cargo dropped · returning in a moment');
   SFX.sink(pan(s));
   for (let i = 0; i < 26; i++) particles.push(P('splinter', s.x, s.y, rand(-90, 90), rand(-90, 90), rand(0.6, 1.3), rand(2, 5)));
   for (let i = 0; i < 18; i++) particles.push(P('foam', s.x + rand(-20, 20), s.y + rand(-20, 20), rand(-30, 30), rand(-30, 30), rand(1, 2), rand(2, 5)));
@@ -498,7 +509,8 @@ function respawn(s) {
 function updateBalls(dt) {
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i]; b.t += dt; b.x += b.vx * dt; b.y += b.vy * dt;
-    let gone = false;
+    let gone = hitTentacle(b);
+    if (gone) { balls[i] = balls[balls.length - 1]; balls.pop(); continue; }
     if (b.t >= b.life || b.x < 0 || b.y < 0 || b.x > WORLD || b.y > WORLD) {
       gone = true; const g = gain({ x: b.x, y: b.y });
       SFX.splash(pan({ x: b.x }), g);
@@ -543,6 +555,140 @@ function shipCollisions(dt) {
       if (simTime - a.lastFx > 0.6) { a.lastFx = simTime; SFX.bump(pan(a)); for (let k = 0; k < 5; k++) particles.push(P('foam', (a.x + b.x) / 2, (a.y + b.y) / 2, rand(-25, 25), rand(-25, 25), rand(0.5, 1), rand(2, 4))); }
     }
   }
+}
+
+// Treasure, harbors and one telegraphed kraken encounter per match.
+const TREASURE_CAP = 8, DOCK_RADIUS = 100;
+let docks = [], treasure = [], kraken = null, combatText = [];
+const totalScore = s => terr.share(s.owner) * 100 + s.gold;
+const distanceTo = (a, b) => dist(a.x, a.y, b.x, b.y);
+function setupAdventure() {
+  treasure = []; combatText = []; kraken = null; docks = [];
+  ships.forEach((s, i) => {
+    // Find an open-water berth on an island's shore, clear of every island.
+    let best = null, score = Infinity;
+    for (const island of islands) for (let n = 0; n < 16; n++) {
+      const a = n * TAU / 16, p = { x: island.x + Math.cos(a) * (island.r + 125), y: island.y + Math.sin(a) * (island.r + 125) };
+      if (p.x < 110 || p.y < 110 || p.x > WORLD - 110 || p.y > WORLD - 110 || islands.some(o => distanceTo(p, o) < o.r + 110) || docks.some(o => distanceTo(p, o) < 230)) continue;
+      const d = distanceTo(s, p); if (d < score) { best = p; score = d; }
+    }
+    const berth = best || { x: 120 + i * 520, y: 120 };
+    docks.push({ ...berth, owner: s.owner, color: s.color });
+    s.home = docks[i]; s.cargo = null; s.gold = 0; s.deliveries = 0; s.repairing = false; s.lastDamage = -10;
+  });
+  islands.forEach((island, i) => {
+    for (let n = 0; n < 16; n++) {
+      const a = n * TAU / 16 + i, p = { x: island.x + Math.cos(a) * (island.r + 190), y: island.y + Math.sin(a) * (island.r + 190) };
+      if (p.x < 60 || p.y < 60 || p.x > WORLD - 60 || p.y > WORLD - 60 || islands.some(o => distanceTo(p, o) < o.r + 50) || docks.some(o => distanceTo(p, o) < 160)) continue;
+      treasure.push({ ...p, value: 2, readyAt: 0 }); break;
+    }
+  });
+}
+function floatText(s, text, color = '#fff1bf') { combatText.push({ x: s.x, y: s.y - 42, text, color, life: 1.2 }); }
+function krakenDanger(s) {
+  return kraken && kraken.phase !== 'gone' && distanceTo(s, kraken) < 205 && !kraken.arms.some(a => a.hp <= 0 && distanceTo(s, a) < 90);
+}
+function updateAdventure(dt) {
+  for (const f of combatText) { f.life -= dt; f.y -= dt * 24; }
+  combatText = combatText.filter(f => f.life > 0);
+  if (state !== 'play') return;
+  if (!kraken && simTime >= 35) {
+    kraken = { x: WORLD / 2, y: WORLD / 2, age: 0, phase: 'warning', cycle: -1, arms: [] };
+    for (let i = 0; i < 5; i++) { const a = i * TAU / 5; kraken.arms.push({ x: kraken.x + Math.cos(a) * 115, y: kraken.y + Math.sin(a) * 115, hp: 33 }); }
+    treasure.push({ x: kraken.x, y: kraken.y, value: 4, readyAt: simTime });
+    toast('Kraken waters!', 'Royal treasure at the chart center. Watch the red ring.'); SFX.bell();
+  }
+  if (kraken && kraken.phase !== 'gone') {
+    const k = kraken; k.age += dt;
+    if (k.age >= 30 || k.arms.every(a => a.hp <= 0)) { k.phase = 'gone'; toast('The kraken retreats', 'Unclaimed royal treasure remains.'); }
+    else {
+      const activeAge = k.age - 5, beat = ((activeAge % 5) + 5) % 5;
+      k.phase = activeAge < 0 || beat < 2.5 ? 'warning' : beat < 3.1 ? 'strike' : 'rest';
+      const cycle = Math.floor(activeAge / 5);
+      if (activeAge >= 0 && beat >= 2.5 && k.cycle !== cycle) {
+        k.cycle = cycle;
+        for (const s of ships) if (!s.sunk && krakenDanger(s)) { damage(s, 22, null); if (s.isPlayer) SFX.hit(0, 1); }
+      }
+    }
+  }
+  for (const s of ships) {
+    s.repairing = false; if (s.sunk) continue;
+    const dock = docks.find(d => distanceTo(s, d) <= DOCK_RADIUS);
+    if (dock && s.sailLevel === 0 && s.speed < 35 && simTime - s.lastDamage > 2) {
+      s.repairing = s.hp < 100; s.hp = Math.min(100, s.hp + 12 * dt);
+    }
+    if (s.cargo && distanceTo(s, s.home) < DOCK_RADIUS) {
+      const reward = Math.min(s.cargo.value, TREASURE_CAP - s.gold);
+      s.gold += reward; s.deliveries++; s.cargo = null;
+      floatText(s, '+' + reward + ' treasure points', '#ffe078');
+      if (s.isPlayer) { toast('Treasure delivered', '+' + reward + ' points · ' + s.gold + '/' + TREASURE_CAP + ' banked'); SFX.bell(); }
+    }
+    if (!s.cargo && s.gold < TREASURE_CAP) {
+      const i = treasure.findIndex(t => simTime >= t.readyAt && distanceTo(s, t) < 46);
+      if (i >= 0) { s.cargo = treasure.splice(i, 1)[0]; floatText(s, 'TREASURE ABOARD', '#ffe078'); if (s.isPlayer) { toast('Treasure aboard', 'Follow HOME. Rivals can see your cargo on the chart.'); SFX.ui(); } }
+    }
+  }
+}
+function adventureGoal(s, brain) {
+  if (state !== 'play') return null;
+  if (krakenDanger(s) && kraken.phase !== 'rest') {
+    const a = Math.atan2(s.y - kraken.y, s.x - kraken.x);
+    return { x: kraken.x + Math.cos(a) * 300, y: kraken.y + Math.sin(a) * 300, dock: false };
+  }
+  if (s.cargo) return s.home;
+  if (s.hp < 45 || (s.repairing && s.hp < 90)) return docks.reduce((a,b) => distanceTo(s,a) < distanceTo(s,b) ? a : b);
+  if (s.gold >= TREASURE_CAP || brain.state === 'flee') return null;
+  const nearby = treasure.filter(t => simTime >= t.readyAt && distanceTo(s,t) < 850 && !brain.segmentHitsIsland(s.x,s.y,t.x,t.y) && !krakenDanger(t));
+  return nearby.sort((a,b) => distanceTo(s,a) - distanceTo(s,b))[0] || null;
+}
+function hitTentacle(b) {
+  if (!kraken || kraken.phase === 'gone') return false;
+  const a = kraken.arms.find(a => a.hp > 0 && distanceTo(a,b) < 28);
+  if (!a) return false;
+  a.hp = Math.max(0, a.hp - BALL_DMG); floatText(a, a.hp ? 'HIT' : 'SAFE GAP', '#ffe078');
+  SFX.hit(pan(a), gain(a)); return true;
+}
+function drawAdventure(t) {
+  ctx.textAlign = 'center'; ctx.font = 'bold 13px sans-serif';
+  for (const d of docks) {
+    ctx.fillStyle = 'rgba(100,240,200,.08)'; ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.setLineDash([8,7]); ctx.beginPath(); ctx.arc(d.x,d.y,DOCK_RADIUS,0,TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#65482a'; ctx.fillRect(d.x-24,d.y-10,48,20); ctx.strokeStyle='#dfc99a'; ctx.strokeRect(d.x-24,d.y-10,48,20);
+    ctx.fillStyle = '#fff1bf'; ctx.fillText(player && d.owner === player.owner ? 'HOME · REPAIR' : 'REPAIR DOCK',d.x,d.y-25);
+    ctx.fillStyle = d.color; ctx.fillRect(d.x-3,d.y-10,6,20);
+  }
+  if (kraken && kraken.phase !== 'gone') {
+    const k=kraken, warning=k.phase==='warning';
+    ctx.fillStyle=warning?'rgba(255,80,90,.14)':k.phase==='strike'?'rgba(255,80,90,.36)':'rgba(120,65,170,.18)';
+    ctx.strokeStyle=warning?'#ff8990':'#ca92ec'; ctx.lineWidth=warning?4:2; ctx.beginPath(); ctx.arc(k.x,k.y,205,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(210,175,240,.4)'; ctx.lineWidth=3;
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(k.x,k.y,50+i*45,t*(i%2?1:-1)+i,t*(i%2?1:-1)+i+Math.PI*1.5);ctx.stroke();}
+    for (const a of k.arms) {
+      if(a.hp<=0){ctx.fillStyle='rgba(90,235,170,.22)';ctx.beginPath();ctx.arc(a.x,a.y,90,0,TAU);ctx.fill();continue;}
+      ctx.strokeStyle='#9d70bc';ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(a.x,a.y+18);ctx.quadraticCurveTo(a.x+35*Math.sin(t*3+a.x),a.y-65,a.x+8,a.y-15);ctx.stroke();
+      ctx.fillStyle='#ffcbab';ctx.beginPath();ctx.arc(a.x+8,a.y-15,5,0,TAU);ctx.fill();
+      ctx.fillStyle='#1b1329';ctx.fillRect(a.x-18,a.y+30,36,5);ctx.fillStyle='#e9b7ff';ctx.fillRect(a.x-18,a.y+30,36*a.hp/33,5);
+    }
+    ctx.fillStyle='#fff1df';ctx.fillText(warning?'KRAKEN · LEAVE RED WATER':k.phase==='strike'?'KRAKEN STRIKE':'SHOOT TENTACLES FOR A SAFE GAP',k.x,k.y-225);
+  }
+  for(const c of treasure){
+    if(simTime<c.readyAt)continue;
+    const y=c.y+Math.sin(t*3+c.x)*4;
+    ctx.fillStyle=c.value===4?'#ffea82':'#dea844';ctx.shadowColor='#ffc650';ctx.shadowBlur=12;ctx.fillRect(c.x-13,y-10,26,20);ctx.shadowBlur=0;
+    ctx.strokeStyle='#69421a';ctx.lineWidth=2;ctx.strokeRect(c.x-13,y-10,26,20);ctx.fillStyle='#fff1bf';ctx.fillRect(c.x-2,y-4,4,8);ctx.fillText('+'+c.value,c.x,y-19);
+  }
+  for(const f of combatText){ctx.globalAlpha=Math.min(1,f.life*2);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;
+}
+function adventureHUD(s) {
+  $('hullfill').style.width = s.hp + '%'; $('hullfill').style.background = s.hp > 35 ? '#91e4aa' : '#ff7373';
+  $('hulltext').textContent = s.sunk ? 'SUNK · RESPAWNING' : 'HULL ' + Math.ceil(s.hp) + (s.repairing ? ' · REPAIRING' : '');
+  $('scoretext').textContent = totalScore(s).toFixed(1) + ' pts · Gold ' + s.gold + '/' + TREASURE_CAP;
+  const target = s.cargo ? s.home : s.hp < 55 ? docks.reduce((a,b)=>distanceTo(s,a)<distanceTo(s,b)?a:b) : treasure.filter(t=>simTime>=t.readyAt).sort((a,b)=>distanceTo(s,a)-distanceTo(s,b))[0];
+  let text = s.cargo ? 'CARGO +' + s.cargo.value + ' · HOME' : s.hp < 55 ? 'REPAIR DOCK' : target ? 'TREASURE' : 'CLAIM THE SEA';
+  if(target) {const a=Math.atan2(target.y-s.y,target.x-s.x); const dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(s,target))+'m';}
+  if(s.sunk) text='Cargo drops when you sink';
+  else if(krakenDanger(s)) text=kraken.phase==='warning'?'KRAKEN WARNING · SAIL OUT OR SHOOT TENTACLES':kraken.phase==='strike'?'KRAKEN STRIKE!':'ESCAPE OR SHOOT A SAFE GAP';
+  else if(docks.some(d=>distanceTo(s,d)<DOCK_RADIUS)) text=s.repairing?'REPAIRING +12 HULL / SEC':s.sailLevel>0?'DROP SAILS TO REPAIR':s.speed>=35?'SLOWING TO REPAIR…':simTime-s.lastDamage<=2?'REPAIRS PAUSED · UNDER FIRE':'HULL READY · SET SAIL';
+  $('objective').textContent=text;
 }
 
 // ============================================================ bot captains
@@ -611,6 +757,11 @@ class Brain {
       const t = this.target, away = Math.atan2(s.y - t.y, s.x - t.x);
       desired = norm(away + adiff(wind.dir, away) * 0.5); wantSail = 2;
     }
+    const objective = adventureGoal(s, this);
+    if (objective) {
+      desired = Math.atan2(objective.y-s.y, objective.x-s.x); wantSail = 2;
+      if (objective.owner && distanceTo(s,objective) < DOCK_RADIUS + 45 && s.hp < 90) wantSail = 0;
+    }
     const offWind = adiff(desired, windFrom);
     if (Math.abs(offWind) < 40 * DEG) {
       if (this.tackT <= 0) { this.tack = offWind >= 0 ? 1 : -1; this.tackT = rand(3, 6); }
@@ -624,6 +775,9 @@ class Brain {
       if (s.speed < 25 && this.state !== 'flee') wantSail = 2;
     }
     s.rudder = clamp(adiff(desired, s.heading) * 2.4, -1, 1);
+    if (kraken && kraken.phase !== 'gone') for (let side=0;side<2;side++) {
+      if(kraken.arms.some(a=>a.hp>0 && distanceTo(s,a)<RANGE && Math.abs(adiff(Math.atan2(a.y-s.y,a.x-s.x),s.side(side)))<0.25)) fire(s,side);
+    }
     if (wantSail !== s.sailLevel) { s.sailLevel = wantSail; }
     for (let side = 0; side < 2; side++) {
       if (s.reload[side] > 0) continue;
@@ -653,6 +807,7 @@ function controlPlayer(dt) {
       if (Math.abs(adiff(Math.atan2(o.y - s.y, o.x - s.x), sa)) < ARC + Math.atan2(HULL_HALF_LEN * 0.8, d)) { s.lock[side] = true; break; }
     }
   }
+  if(kraken && kraken.phase !== 'gone') for(let side=0;side<2;side++) if(kraken.arms.some(a=>a.hp>0 && distanceTo(s,a)<RANGE && Math.abs(adiff(Math.atan2(a.y-s.y,a.x-s.x),s.side(side)))<0.25)) s.lock[side]=true;
   if (Input.fire[0]) fire(s, 0);
   if (Input.fire[1]) fire(s, 1);
   if (Input.fire[2]) { if (s.lock[0] && !s.lock[1]) fire(s, 0); else if (s.lock[1] && !s.lock[0]) fire(s, 1); else { fire(s, 0); fire(s, 1); } }
@@ -676,6 +831,7 @@ function setupWorld(withPlayer, colorIdx) {
     if (!s.isPlayer) s.brain = new Brain(s);
     ships.push(s);
   });
+  setupAdventure();
   player = withPlayer ? ships[0] : null;
   cam.follow = player || ships[0]; cam.x = cam.follow.x; cam.y = cam.follow.y; cam.switchT = 9; cam.shake = 0;
   matchT = MATCH_TIME; finalCalled = false; simTime = 0;
@@ -690,7 +846,7 @@ function step(dt) {
     controlPlayer(dt);
   }
   for (const s of ships) { if (s.brain) s.brain.update(dt); updateShip(s, dt); }
-  shipCollisions(dt); updateBalls(dt); updateParticles(dt);
+  shipCollisions(dt); updateBalls(dt); updateParticles(dt); updateAdventure(dt);
   if (state === 'title') { cam.switchT -= dt; if (cam.switchT <= 0) { cam.switchT = rand(7, 11); const alive = ships.filter(s => !s.sunk && s !== cam.follow); if (alive.length) cam.follow = alive[Math.floor(rand(alive.length))]; } }
   const f = cam.follow; if (f) {
     const look = f.sunk ? 0 : 50 * clamp(f.speed / MAX_SPEED, 0, 1);
@@ -712,12 +868,12 @@ function startMatch() {
   const iv = setInterval(() => {
     n--;
     if (n > 0) { num.textContent = n; SFX.tick(); }
-    else { clearInterval(iv); num.textContent = 'SAIL!'; SFX.bell(); setTimeout(() => { state = 'play'; showScreen(null); toast('Paint the sea', 'most sea at the bell wins'); }, 650); }
+    else { clearInterval(iv); num.textContent = 'SAIL!'; SFX.bell(); setTimeout(() => { state = 'play'; showScreen(null); toast('Claim water. Bring home treasure.', 'Sea points + delivered gold wins'); }, 650); }
   }, 900);
 }
 function endMatch() {
   state = 'results'; showScreen('results');
-  const ranked = ships.slice().sort((a, b) => terr.counts[b.owner] - terr.counts[a.owner]);
+  const ranked = ships.slice().sort((a, b) => totalScore(b) - totalScore(a) || terr.counts[b.owner] - terr.counts[a.owner]);
   const win = ranked[0], me = player, myRank = ranked.indexOf(me) + 1, myPct = terr.share(me.owner) * 100;
   $('winner').textContent = win.isPlayer ? 'Your ' + win.name + ' rules the sea.' : 'The ' + win.name + ' rules the sea. You came ' + ['first', 'second', 'third', 'fourth', 'fifth'][myRank - 1] + '.';
   const rows = $('rows'); rows.innerHTML = '';
@@ -725,8 +881,8 @@ function endMatch() {
     const r = document.createElement('div'); r.className = 'row' + (s.isPlayer ? ' me' : '');
     r.innerHTML = '<span class="rk">' + (i + 1) + '</span><span class="sw"></span><span class="nm"></span><span class="pct"></span>';
     r.querySelector('.sw').style.background = s.color;
-    const nm = r.querySelector('.nm'); nm.textContent = s.name; const sm = document.createElement('small'); sm.textContent = (s.isPlayer ? 'You · ' : '') + s.sinks + (s.sinks === 1 ? ' sink' : ' sinks') + ' · sunk ' + s.deaths + 'x'; nm.appendChild(sm);
-    r.querySelector('.pct').textContent = (terr.share(s.owner) * 100).toFixed(1) + '%';
+    const nm = r.querySelector('.nm'); nm.textContent = s.name; const sm = document.createElement('small'); sm.textContent = (s.isPlayer ? 'You · ' : '') + s.sinks + (s.sinks === 1 ? ' sink' : ' sinks') + ' · ' + (terr.share(s.owner)*100).toFixed(1) + ' sea + ' + s.gold + ' gold'; nm.appendChild(sm);
+    r.querySelector('.pct').textContent = totalScore(s).toFixed(1) + ' pts';
     rows.appendChild(r);
   });
   const best = parseFloat(store.get('best', '0')) || 0; if (myPct > best) store.set('best', myPct.toFixed(1));
@@ -817,6 +973,7 @@ function render(t) {
   for (const is of islands) if (!(is.x + is.r * 1.3 < vx0 || is.x - is.r * 1.3 > vx0 + vw || is.y + is.r * 1.3 < vy0 || is.y - is.r * 1.3 > vy0 + vh)) drawIsland(is, t);
   // foam particles under everything else
   for (const p of particles) if (p.type === 'foam') { ctx.fillStyle = 'rgba(255,255,255,' + (0.55 * p.life / p.max).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill(); }
+  drawAdventure(t);
   if (player && !player.sunk) drawArcs(player);
   const order = ships.slice().sort((a, b) => (a.isPlayer ? 1 : 0) - (b.isPlayer ? 1 : 0));
   for (const s of order) { if (s.x + 80 < vx0 || s.x - 80 > vx0 + vw || s.y + 80 < vy0 || s.y - 80 > vy0 + vh) continue; drawShip(s, t); }
@@ -906,6 +1063,8 @@ function drawShip(s, t) {
     ctx.strokeStyle = '#2a1a0c'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(mx + yx * yh, yy * yh); ctx.lineTo(mx - yx * yh, -yy * yh); ctx.stroke();
     ctx.fillStyle = '#5a3a1c'; ctx.beginPath(); ctx.arc(mx, 0, 2.6, 0, TAU); ctx.fill();
   }
+  if(s.hp<70){ctx.strokeStyle='#231b18';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-20,-7);ctx.lineTo(-13,1);ctx.lineTo(-18,6);if(s.hp<35){ctx.moveTo(8,-8);ctx.lineTo(2,0);ctx.lineTo(12,7);}ctx.stroke();}
+  if(s.cargo){ctx.fillStyle='#ffdd6a';ctx.fillRect(-25,-5,9,10);}
   // pennant streams with the wind
   const fa = Math.atan2(lwy, lwx), fl = 13 + 4 * wind.strength, wob = Math.sin(t * 9 + s.phase) * 3;
   ctx.fillStyle = s.color; ctx.beginPath(); ctx.moveTo(-28, 0); ctx.lineTo(-28 + Math.cos(fa) * fl - Math.sin(fa) * wob, Math.sin(fa) * fl + Math.cos(fa) * wob); ctx.lineTo(-28 + Math.cos(fa) * fl * 0.55 - Math.sin(fa) * 3.5, Math.sin(fa) * fl * 0.55 + Math.cos(fa) * 3.5); ctx.closePath(); ctx.fill();
@@ -938,6 +1097,7 @@ function updateHUD() {
   if ($('hud').hidden) return;
   frameN++;
   const s = player; if (!s) return;
+  adventureHUD(s);
   const tt = Math.max(0, Math.ceil(matchT)), txt = Math.floor(tt / 60) + ':' + String(tt % 60).padStart(2, '0');
   if (txt !== lastTimerText) { el.timer.textContent = txt; lastTimerText = txt; el.timer.classList.toggle('low', matchT <= 20); }
   const irons = !s.sunk && s.phi < 33 * DEG && s.sailLevel > 0 && s.speed < 30;
@@ -969,7 +1129,10 @@ function drawMinimap() {
   const c = miniCtx, S = mini.width, k = S / WORLD; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
   c.globalAlpha = 0.85; c.drawImage(terr.canvas, 0, 0, S, S); c.globalAlpha = 1;
   c.fillStyle = '#d9c48c'; for (const is of islands) { c.beginPath(); c.arc(is.x * k, is.y * k, is.r * k, 0, TAU); c.fill(); }
-  for (const s of ships) { if (s.sunk) continue; c.fillStyle = s.color; c.beginPath(); c.arc(s.x * k, s.y * k, s.isPlayer ? 5 : 4, 0, TAU); c.fill(); if (s.isPlayer) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); } }
+  for(const d of docks){c.strokeStyle=d.color;c.lineWidth=2;c.strokeRect(d.x*k-4,d.y*k-4,8,8);if(player&&d.owner===player.owner){c.fillStyle='#fff';c.font='bold 12px sans-serif';c.fillText('H',d.x*k-4,d.y*k-7);}}
+  for(const t of treasure){if(simTime<t.readyAt)continue;c.fillStyle='#ffe078';c.fillRect(t.x*k-2,t.y*k-2,5,5);}
+  if(kraken&&kraken.phase!=='gone'){c.strokeStyle='#ff737e';c.lineWidth=2;c.beginPath();c.arc(kraken.x*k,kraken.y*k,205*k,0,TAU);c.stroke();}
+  for (const s of ships) { if (s.sunk) continue; if(s.cargo){c.strokeStyle='#ffe078';c.lineWidth=2;c.beginPath();c.arc(s.x*k,s.y*k,7,0,TAU);c.stroke();} c.fillStyle = s.color; c.beginPath(); c.arc(s.x * k, s.y * k, s.isPlayer ? 5 : 4, 0, TAU); c.fill(); if (s.isPlayer) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); } }
   const vw = W / cam.scale * k, vh = H / cam.scale * k; c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1; c.strokeRect(cam.x * k - vw / 2, cam.y * k - vh / 2, vw, vh);
 }
 
