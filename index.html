@@ -192,7 +192,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
       <b>Fire</b><span>Hold FIRE for steady broadsides. Use your other thumb to steer. ANCHOR stops your ship.</span>
       <b>Missions</b><span>Learn safely in level 1. Then capture islands, escort merchants, sink flagships, and dodge storms.</span>
       <b>Repair</b><span>Sail through your colored HOME dock for full health.</span>
-      <b>Treasure</b><span>Bring your whole boat inside a gold circle to collect. Explore the Arctic for royal treasure. Return HOME to bank it.</span>
+      <b>Treasure</b><span>Carry up to two treasure boxes. Enter a gold circle to collect, then sail HOME to bank your cargo. Explore the Arctic for royal treasure.</span>
       <b>Bonus</b><span>Between levels, paint 5% of the Earth chart in 60 seconds to earn a permanent ship upgrade.</span>
     </div>
     <div class="foot"><span id="best"></span><button id="soundbtn" type="button">Sound on</button></div>
@@ -413,7 +413,7 @@ function campaignHUD(){
  else if(l.type==='escort')text='ESCORT '+m.waypoint+'/'+m.route.length+' · MERCHANT '+Math.ceil(m.merchant.hp)+' HP'+(distanceTo(player,m.merchant)>340?' · WAITING FOR YOU':'');
  else text='SURVIVE · LEAVE RED CIRCLES BEFORE LIGHTNING';
  const target=missionTarget();if(target){const a=bearing(player,target),dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(player,target))+'m';}
- if(player.cargo||player.hp<player.maxHp){const a=bearing(player,player.home),dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+='\n'+(player.cargo?'CARGO +'+player.cargo.value:'REPAIR')+' · HOME '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(player,player.home))+'m';}
+ if(player.cargo||player.hp<player.maxHp){const a=bearing(player,player.home),dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+='\n'+(player.cargo?cargoLabel(player):'REPAIR')+' · HOME '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(player,player.home))+'m';}
  $('scoretext').textContent='LEVEL '+(m.index+1)+' / 10 · '+difficulty(m.index);$('objective').textContent=text;
 }
 function drawMission(t){
@@ -720,7 +720,7 @@ function damage(s, dmg, by) {
 function sink(s, by) {
   if(s.isPlayer) Input.reset();
   s.sunk = true; s.sinkT = 4.5; s.deaths++; s.speed = 0; s.hp = 0;
-  if (s.cargo) { treasure.push({x:s.x,y:s.y,value:s.cargo.value,readyAt:simTime+1}); s.cargo=null; }
+  if (s.cargo) { for(const box of cargoBoxes(s))treasure.push({x:s.x,y:s.y,value:box.value,readyAt:simTime+1}); s.cargo=null; }
   if (!by && s.isPlayer && mode==='bonus') toast('Sunk', 'Returning in a moment');
   SFX.sink(pan(s));
   for (let i = 0; i < 26; i++) particles.push(P('splinter', s.x, s.y, rand(-90, 90), rand(-90, 90), rand(0.6, 1.3), rand(2, 5)));
@@ -792,6 +792,9 @@ function shipCollisions(dt) {
 }
 
 // Treasure, harbors and one telegraphed kraken encounter per match.
+const CARGO_CAPACITY=2;
+const cargoBoxes=s=>s.cargo?(s.cargo.boxes||[{value:s.cargo.value}]):[];
+const cargoLabel=s=>'CARGO '+cargoBoxes(s).length+'/'+CARGO_CAPACITY+' · +'+s.cargo.value;
 const TREASURE_CAP = 8, DOCK_RADIUS = 100, TREASURE_RADIUS=115;
 let docks = [], treasure = [], kraken = null, combatText = [];
 const totalScore = s => terr.share(s.owner) * 100 + s.gold;
@@ -818,14 +821,20 @@ function updateAdventure(dt) {
     s.repairing=s.repairFlash>0;
     if (s.cargo && distanceTo(s, s.home) < DOCK_RADIUS) {
       const reward = Math.min(s.cargo.value, TREASURE_CAP - s.gold);
-      s.gold += reward; s.deliveries++; s.cargo = null;
+      s.gold += reward; s.deliveries+=cargoBoxes(s).length; s.cargo = null;
       if(s.isPlayer&&mode==='campaign'){voyage.treasure+=reward;saveVoyage();}
       floatText(s, '+' + reward + ' treasure', '#ffe078');
       if (s.isPlayer) { toast('Treasure delivered', '+' + reward + ' treasure · ' + voyage.treasure + ' collected on this voyage'); SFX.bell(); }
     }
-    if (!s.isMerchant && !s.cargo && s.gold < TREASURE_CAP) {
-      const i = treasure.findIndex(t => simTime >= t.readyAt && distanceTo(s,t)+Math.hypot(HULL_HALF_LEN,HULL_HALF_W)<=TREASURE_RADIUS);
-      if (i >= 0) { s.cargo = treasure.splice(i, 1)[0]; floatText(s, 'TREASURE ABOARD', '#ffe078'); if (s.isPlayer) { toast('Treasure aboard', 'Follow HOME. Rivals can see your cargo on the chart.'); SFX.ui(); } }
+    if (!s.isMerchant && s.gold < TREASURE_CAP) {
+      let picked=0;
+      while(cargoBoxes(s).length<CARGO_CAPACITY){
+        const i=treasure.findIndex(t=>simTime>=t.readyAt&&distanceTo(s,t)+Math.hypot(HULL_HALF_LEN,HULL_HALF_W)<=TREASURE_RADIUS);
+        if(i<0)break;
+        const chest=treasure.splice(i,1)[0],boxes=[...cargoBoxes(s),{value:chest.value}];
+        s.cargo={boxes,value:boxes.reduce((sum,box)=>sum+box.value,0)};picked++;
+      }
+      if(picked){floatText(s,'TREASURE '+cargoBoxes(s).length+'/'+CARGO_CAPACITY,'#ffe078');if(s.isPlayer){toast('Treasure aboard · '+cargoBoxes(s).length+'/'+CARGO_CAPACITY,cargoBoxes(s).length===CARGO_CAPACITY?'Hold full. Return HOME to bank both boxes.':'Room for one more box. Return HOME whenever you like.');SFX.ui();}}
     }
   }
 }
@@ -886,7 +895,7 @@ function adventureHUD(s) {
   $('hulltext').textContent = s.sunk ? 'SUNK · RESPAWNING' : 'HULL ' + Math.ceil(s.hp) + (s.repairing ? ' · RESTORED' : '');
   $('scoretext').textContent = totalScore(s).toFixed(1) + ' pts · Gold ' + s.gold + '/' + TREASURE_CAP;
   const target = s.cargo ? s.home : s.hp < (s.maxHp||100) ? s.home : treasure.filter(t=>simTime>=t.readyAt).sort((a,b)=>distanceTo(s,a)-distanceTo(s,b))[0];
-  let text = s.cargo ? 'CARGO +' + s.cargo.value + ' · HOME' : s.hp < (s.maxHp||100) ? 'HOME REPAIR' : target ? 'TREASURE' : 'CLAIM THE SEA';
+  let text = s.cargo ? cargoLabel(s) + ' · HOME' : s.hp < (s.maxHp||100) ? 'HOME REPAIR' : target ? 'TREASURE' : 'CLAIM THE SEA';
   if(target) {const a=bearing(s,target); const dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(s,target))+'m';}
   if(s.sunk) text='Cargo drops when you sink';
   else if(krakenDanger(s)) text=kraken.phase==='warning'?'KRAKEN WARNING · SAIL OUT OR SHOOT TENTACLES':kraken.phase==='strike'?'KRAKEN STRIKE!':'ESCAPE OR SHOOT A SAFE GAP';
@@ -1261,7 +1270,7 @@ function drawShip(s, t) {
   if(s.hp<70){ctx.strokeStyle='#231b18';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-20,-7);ctx.lineTo(-13,1);ctx.lineTo(-18,6);if(s.hp<35){ctx.moveTo(8,-8);ctx.lineTo(2,0);ctx.lineTo(12,7);}ctx.stroke();}
   if(s.anchored){ctx.strokeStyle='#bbefd5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(29,0);ctx.lineTo(43,14);ctx.stroke();ctx.fillStyle='#bbefd5';ctx.font='16px sans-serif';ctx.fillText('⚓',47,25);}
   if(s.repairing){ctx.strokeStyle='rgba(130,255,175,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,42,23,0,0,TAU);ctx.stroke();}
-  if(s.cargo){ctx.fillStyle='#ffdd6a';ctx.fillRect(-25,-5,9,10);}
+  if(s.cargo){ctx.fillStyle='#ffdd6a';cargoBoxes(s).forEach((box,i)=>ctx.fillRect(-25+i*12,-5,9,10));}
   // pennant streams with the wind
   const fa = Math.atan2(lwy, lwx), fl = 13 + 4 * wind.strength, wob = Math.sin(t * 9 + s.phase) * 3;
   ctx.fillStyle = s.color; ctx.beginPath(); ctx.moveTo(-28, 0); ctx.lineTo(-28 + Math.cos(fa) * fl - Math.sin(fa) * wob, Math.sin(fa) * fl + Math.cos(fa) * wob); ctx.lineTo(-28 + Math.cos(fa) * fl * 0.55 - Math.sin(fa) * 3.5, Math.sin(fa) * fl * 0.55 + Math.cos(fa) * 3.5); ctx.closePath(); ctx.fill();

@@ -65,6 +65,12 @@ g.cam.x=s.x;g.cam.y=1;g.render(0);
 s=start(4);const foe=g.ships[1];s.x=300;s.y=1;foe.x=1500;foe.y=8;foe.heading=0;foe.invuln=0;const hp=foe.hp;g.balls.push({x:300,y:1,vx:0,vy:-430,t:0,life:1,owner:s});g.updateBalls(.02);assert.equal(foe.hp,hp-11);
 // Paint ownership agrees across the same polar seam.
 g.beginRound('bonus');s=g.ships[0];g.terr.paint(300,1,28,s.owner,s.color);assert.equal(g.terr.ownerAt(1500,5),s.owner);
+// Two slots collect nearby boxes, leave a third, bank together and drop separately.
+s=start();s.x=1200;s.y=100;g.treasure.length=0;
+g.treasure.push({x:s.x,y:s.y,value:2,readyAt:0},{x:s.x,y:s.y,value:4,readyAt:0},{x:s.x,y:s.y,value:2,readyAt:0});
+g.updateAdventure(.01);assert.equal(s.cargo.boxes.length,2);assert.equal(s.cargo.value,6);assert.equal(g.treasure.length,1);g.updateAdventure(.01);assert.equal(g.treasure.length,1);
+const beforeBank=g.voyage.treasure;s.x=s.home.x;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.gold,6);assert.equal(s.deliveries,2);assert.equal(s.cargo,null);assert.equal(g.voyage.treasure,beforeBank+6);
+s=start();s.x=1200;s.y=100;g.treasure.length=0;g.treasure.push({x:s.x,y:s.y,value:2,readyAt:0},{x:s.x,y:s.y,value:4,readyAt:0});g.updateAdventure(.01);s.invuln=0;g.damage(s,999,null);assert.equal(s.cargo,null);assert.deepEqual(Array.from(g.treasure,t=>t.value).sort(),[2,4]);assert.ok(g.treasure.every(t=>t.readyAt===1));
 // Full simulation catches invalid actor state across all mission types.
 for(let level=1;level<10;level++){s=start(level);for(let frame=0;frame<12000&&g.state==='play';frame++){g.step(1/60);if(frame%600===0)g.render(frame/60)}assert.equal(g.state,'results');for(const ship of g.ships){assert.ok(Number.isFinite(ship.x)&&Number.isFinite(ship.hp));assert.ok(ship.hp>=0&&ship.hp<=ship.maxHp)}}
-console.log('PASS: enemy-free tutorial, Arctic treasure, navigable straits, pole/date-line crossing, ten mission setups and full simulations, Earth routes, treasure circle and banking, drive-through repair, objective success/failure, boss armor, held fire, multitouch and zoom guards');
+console.log('PASS: two-box pickup/capacity/banking/separate drops, enemy-free tutorial, Arctic treasure, navigable straits, pole/date-line crossing, ten mission setups and full simulations, Earth routes, treasure circle and banking, drive-through repair, objective success/failure, boss armor, held fire, multitouch and zoom guards');

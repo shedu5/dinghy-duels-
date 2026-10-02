@@ -56,9 +56,9 @@ Sail through your own colored HOME dock ring for instant full repair, including 
 
 ## Treasure
 
-Each campaign mission includes six royal treasure chests in Arctic waters, plus local mission treasure (one guided chest in the tutorial). Chests have optional treasure pickups with visible gold pickup circles. A chest is collected automatically once the entire hull fits inside its circle; the boat's center need not touch the chest. Carry one at a time and return HOME to bank it in your saved voyage total. Each mission permits up to eight banked treasure. Treasure is a collectible; ship upgrades come from bonus rounds.
+Each campaign mission includes six royal treasure chests in Arctic waters, plus local mission treasure (one guided chest in the tutorial). Chests have optional treasure pickups with visible gold pickup circles. A chest is collected automatically once the entire hull fits inside its circle; the boat's center need not touch the chest. Carry up to two boxes at a time and return HOME to bank it in your saved voyage total. Each mission permits up to eight banked treasure. Treasure is a collectible; ship upgrades come from bonus rounds.
 
-Sinking drops cargo for another captain to collect after a one-second delay. A gold ring on the minimap marks cargo. Square chart markers show docks. The HUD points toward the mission objective and adds a HOME direction when carrying treasure or needing repairs.
+The HUD shows cargo slots (1/2 or 2/2) and both boxes appear on the boat. HOME banks both boxes together, subject to the mission banking limit. Sinking drops each box separately for another captain to collect after a one-second delay. A gold ring on the minimap marks cargo. Square chart markers show docks. The HUD points toward the mission objective and adds a HOME direction when carrying treasure or needing repairs.
 
 ## Development and checks
 
