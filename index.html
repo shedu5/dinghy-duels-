@@ -71,6 +71,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .hud-bottom{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end}
 #wheel{width:116px;height:116px;opacity:.92;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
 #wheel svg{width:100%;height:100%;transition:transform .08s linear}
+#anchor{min-width:130px;min-height:44px;border:2px solid #dfc99a;border-radius:24px;background:rgba(21,18,13,.85);padding:8px 14px;font-size:16px;font-weight:700;pointer-events:auto}#anchor[aria-pressed="true"]{background:#215946;border-color:#91e4aa;color:#d5ffe4}#anchor:disabled{opacity:.45}
 .rightctl{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .sails{display:flex;align-items:center;gap:8px;pointer-events:auto}
 .sails button{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(239,227,198,.5);background:rgba(21,18,13,.72);color:var(--bone);font-size:17px;display:flex;align-items:center;justify-content:center;padding:0}
@@ -155,6 +156,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
         </svg>
       </div>
       <div class="rightctl">
+        <button id="anchor" type="button" aria-label="Drop anchor" aria-pressed="false">⚓ DROP ANCHOR</button>
         <div class="sails">
           <button id="sailDn" type="button" aria-label="Less sail">▼</button>
           <div><div class="sail-ind" id="sailind"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="sail-lbl">Sails</div></div>
@@ -180,7 +182,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
       <b>Steer</b><span>Drag anywhere on the water. Arrow keys work too.</span>
       <b>Wind</b><span>Sail across the wind for speed. Point into it and you stall, in irons.</span>
       <b>Guns</b><span>Cannons fire to the sides. Drop sails to steady your aim. Moving fast, your window is a blink.</span>
-      <b>Treasure</b><span>Collect gold chests and return HOME. Cargo drops when sunk. Gold carriers glow on the chart.</span><b>Repair</b><span>Drop all sails inside any dock ring to repair. Taking damage pauses repairs.</span><b>Kraken</b><span>Royal treasure appears at the center. Escape red water before it strikes, or shoot a tentacle to open a green safe gap.</span><b>Win</b><span>1% sea = 1 point. Delivered chests add 2 points (royal: 4), capped at 8. Highest total at the bell wins.</span>
+      <b>Treasure</b><span>Collect gold chests and return HOME. Cargo drops when sunk. Gold carriers glow on the chart.</span><b>Repair</b><span>Tap ⚓ DROP ANCHOR inside any dock ring to stop and repair. Tap RAISE ANCHOR to sail again. Lowering all sails also works. Hits pause repairs.</span><b>Kraken</b><span>Royal treasure appears at the center. Escape red water before it strikes, or shoot a tentacle to open a green safe gap.</span><b>Win</b><span>1% sea = 1 point. Delivered chests add 2 points (royal: 4), capped at 8. Highest total at the bell wins.</span>
     </div>
     <div class="foot"><span id="best"></span><button id="soundbtn" type="button">Sound on</button></div>
   </div>
@@ -321,6 +323,7 @@ const Input = {
       if (e.target && /INPUT|TEXTAREA|BUTTON/.test(e.target.tagName) && e.code === 'Space') return;
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
       if (e.repeat) return;
+      if (e.code === 'KeyX') toggleAnchor();
       this.keys[e.code] = true;
       if (e.code === 'KeyW' || e.code === 'ArrowUp') this.sailDelta = 1;
       if (e.code === 'KeyS' || e.code === 'ArrowDown') this.sailDelta = -1;
@@ -393,7 +396,7 @@ class Ship {
     this.x = 0; this.y = 0; this.heading = 0; this.speed = 0; this.rudder = 0; this.sailLevel = 2; this.sailSet = 1; this.hp = 100;
     this.reload = [0, 0]; this.sunk = false; this.sinkT = 0; this.invuln = 0; this.sinks = 0; this.deaths = 0;
     this.roll = 0; this.alpha = 1; this.scale = 1; this.polar = 1; this.phi = Math.PI / 2; this.lock = [false, false]; this.flash = 0; this.grounded = false;
-    this.phase = rand(TAU); this.brain = null; this.lastFx = 0;
+    this.anchored = false; this.phase = rand(TAU); this.brain = null; this.lastFx = 0;
   }
   side(i) { return this.heading + (i ? Math.PI / 2 : -Math.PI / 2); }
 }
@@ -425,12 +428,13 @@ function updateShip(s, dt) {
   s.invuln = Math.max(0, s.invuln - dt); s.flash = Math.max(0, s.flash - dt);
   const target = [0, 0.5, 1][s.sailLevel]; s.sailSet += (target - s.sailSet) * clamp(dt * 2.2, 0, 1);
   s.phi = Math.abs(adiff(s.heading, wind.dir + Math.PI)); s.polar = polar(s.phi);
-  const tgt = MAX_SPEED * wind.strength * s.polar * s.sailSet;
-  s.speed += (tgt - s.speed) * clamp(dt * (tgt > s.speed ? 0.9 : 0.75), 0, 1);
+  const tgt = s.anchored ? 0 : MAX_SPEED * wind.strength * s.polar * s.sailSet;
+  s.speed += (tgt - s.speed) * clamp(dt * (s.anchored ? 4 : tgt > s.speed ? 0.9 : 0.75), 0, 1);
   const turnF = 0.4 + 0.6 * clamp(s.speed / (MAX_SPEED * 0.5), 0, 1);
-  s.heading = norm(s.heading + MAX_TURN * s.rudder * turnF * dt);
+  s.heading = norm(s.heading + (s.anchored ? 0 : MAX_TURN * s.rudder * turnF * dt));
   s.speed -= s.speed * 0.22 * Math.abs(s.rudder) * dt;
-  const driftK = (6 + 8 * (1 - s.sailSet)) * wind.strength;
+  if (s.anchored && s.speed < 0.5) s.speed = 0;
+  const driftK = s.anchored ? 0 : (6 + 8 * (1 - s.sailSet)) * wind.strength;
   s.x += Math.cos(s.heading) * s.speed * dt + wind.vx * driftK * dt;
   s.y += Math.sin(s.heading) * s.speed * dt + wind.vy * driftK * dt;
   let hit = false;
@@ -502,7 +506,7 @@ function sink(s, by) {
 }
 function respawn(s) {
   const p = clearSpot(380); s.x = p.x; s.y = p.y; s.heading = rand(TAU);
-  s.sunk = false; s.hp = 100; s.invuln = 2.5; s.sailLevel = 2; s.sailSet = 0.2; s.speed = 0; s.roll = 0; s.alpha = 1; s.scale = 1; s.reload = [1, 1];
+  s.anchored = false; s.sunk = false; s.hp = 100; s.invuln = 2.5; s.sailLevel = 2; s.sailSet = 0.2; s.speed = 0; s.roll = 0; s.alpha = 1; s.scale = 1; s.reload = [1, 1];
   if (s.brain) s.brain.reset();
 }
 
@@ -614,7 +618,7 @@ function updateAdventure(dt) {
   for (const s of ships) {
     s.repairing = false; if (s.sunk) continue;
     const dock = docks.find(d => distanceTo(s, d) <= DOCK_RADIUS);
-    if (dock && s.sailLevel === 0 && s.speed < 35 && simTime - s.lastDamage > 2) {
+    if (dock && (s.anchored || s.sailLevel === 0) && s.speed < 35 && simTime - s.lastDamage > 2) {
       s.repairing = s.hp < 100; s.hp = Math.min(100, s.hp + 12 * dt);
     }
     if (s.cargo && distanceTo(s, s.home) < DOCK_RADIUS) {
@@ -651,9 +655,10 @@ function hitTentacle(b) {
 function drawAdventure(t) {
   ctx.textAlign = 'center'; ctx.font = 'bold 13px sans-serif';
   for (const d of docks) {
-    ctx.fillStyle = 'rgba(100,240,200,.08)'; ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.setLineDash([8,7]); ctx.beginPath(); ctx.arc(d.x,d.y,DOCK_RADIUS,0,TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    const repairingHere = ships.some(s => !s.sunk && s.repairing && distanceTo(s,d) <= DOCK_RADIUS);
+    ctx.fillStyle = repairingHere ? 'rgba(100,255,165,.25)' : 'rgba(100,240,200,.08)'; ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.setLineDash([8,7]); ctx.beginPath(); ctx.arc(d.x,d.y,DOCK_RADIUS,0,TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = '#65482a'; ctx.fillRect(d.x-24,d.y-10,48,20); ctx.strokeStyle='#dfc99a'; ctx.strokeRect(d.x-24,d.y-10,48,20);
-    ctx.fillStyle = '#fff1bf'; ctx.fillText(player && d.owner === player.owner ? 'HOME · REPAIR' : 'REPAIR DOCK',d.x,d.y-25);
+    ctx.fillStyle = '#fff1bf'; ctx.fillText(player && d.owner === player.owner ? 'HOME · ⚓ REPAIR' : '⚓ REPAIR DOCK',d.x,d.y-25);
     ctx.fillStyle = d.color; ctx.fillRect(d.x-3,d.y-10,6,20);
   }
   if (kraken && kraken.phase !== 'gone') {
@@ -679,6 +684,7 @@ function drawAdventure(t) {
   for(const f of combatText){ctx.globalAlpha=Math.min(1,f.life*2);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;
 }
 function adventureHUD(s) {
+  const anchorButton = $('anchor'); anchorButton.disabled = s.sunk; anchorButton.setAttribute('aria-pressed', String(s.anchored)); anchorButton.setAttribute('aria-label', s.anchored ? 'Raise anchor' : 'Drop anchor'); anchorButton.textContent = s.anchored ? '⚓ RAISE ANCHOR' : '⚓ DROP ANCHOR';
   $('hullfill').style.width = s.hp + '%'; $('hullfill').style.background = s.hp > 35 ? '#91e4aa' : '#ff7373';
   $('hulltext').textContent = s.sunk ? 'SUNK · RESPAWNING' : 'HULL ' + Math.ceil(s.hp) + (s.repairing ? ' · REPAIRING' : '');
   $('scoretext').textContent = totalScore(s).toFixed(1) + ' pts · Gold ' + s.gold + '/' + TREASURE_CAP;
@@ -687,7 +693,9 @@ function adventureHUD(s) {
   if(target) {const a=Math.atan2(target.y-s.y,target.x-s.x); const dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(s,target))+'m';}
   if(s.sunk) text='Cargo drops when you sink';
   else if(krakenDanger(s)) text=kraken.phase==='warning'?'KRAKEN WARNING · SAIL OUT OR SHOOT TENTACLES':kraken.phase==='strike'?'KRAKEN STRIKE!':'ESCAPE OR SHOOT A SAFE GAP';
-  else if(s.hp < 100 && docks.some(d=>distanceTo(s,d)<DOCK_RADIUS)) text=s.repairing?'REPAIRING +12 HULL / SEC':s.sailLevel>0?'DROP SAILS TO REPAIR':s.speed>=35?'SLOWING TO REPAIR…':simTime-s.lastDamage<=2?'REPAIRS PAUSED · UNDER FIRE':'HULL READY · SET SAIL';
+  else if(s.hp < 100 && docks.some(d=>distanceTo(s,d)<DOCK_RADIUS)) text=s.repairing?'REPAIRING +12 HULL / SEC':simTime-s.lastDamage<=2?'REPAIRS PAUSED · UNDER FIRE':s.anchored||s.sailLevel===0?'SLOWING TO REPAIR…':'TAP ⚓ DROP ANCHOR TO REPAIR';
+  else if(s.anchored) text=s.hp>=100?'ANCHOR DOWN · HULL FULL · RAISE TO SAIL':'ANCHOR DOWN · REPAIRS NEED A DOCK';
+  else if(s.hp<100 && docks.some(d=>distanceTo(s,d)<DOCK_RADIUS+100)) text='DOCK AHEAD · ENTER RING & DROP ANCHOR';
   $('objective').textContent=text;
 }
 
@@ -774,6 +782,7 @@ class Brain {
       else if (lOk) desired = L; else if (rOk) desired = R; else desired = norm(s.heading + Math.PI * 0.8);
       if (s.speed < 25 && this.state !== 'flee') wantSail = 2;
     }
+    s.anchored = Boolean(objective && objective.owner && distanceTo(s,objective) < DOCK_RADIUS - 10 && s.hp < 90);
     s.rudder = clamp(adiff(desired, s.heading) * 2.4, -1, 1);
     if (kraken && kraken.phase !== 'gone') for (let side=0;side<2;side++) {
       if(kraken.arms.some(a=>a.hp>0 && distanceTo(s,a)<RANGE && Math.abs(adiff(Math.atan2(a.y-s.y,a.x-s.x),s.side(side)))<0.25)) fire(s,side);
@@ -794,6 +803,10 @@ class Brain {
 }
 
 // ============================================================ player control
+function toggleAnchor() {
+  if (state !== 'play' || !player || player.sunk) return;
+  player.anchored = !player.anchored; SFX.ui();
+}
 function controlPlayer(dt) {
   const s = player; if (!s || s.sunk) { Input.fire = [false, false, false]; Input.sailDelta = 0; return; }
   const kr = Input.keyRudder();
@@ -1067,6 +1080,8 @@ function drawShip(s, t) {
     ctx.fillStyle = '#5a3a1c'; ctx.beginPath(); ctx.arc(mx, 0, 2.6, 0, TAU); ctx.fill();
   }
   if(s.hp<70){ctx.strokeStyle='#231b18';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-20,-7);ctx.lineTo(-13,1);ctx.lineTo(-18,6);if(s.hp<35){ctx.moveTo(8,-8);ctx.lineTo(2,0);ctx.lineTo(12,7);}ctx.stroke();}
+  if(s.anchored){ctx.strokeStyle='#bbefd5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(29,0);ctx.lineTo(43,14);ctx.stroke();ctx.fillStyle='#bbefd5';ctx.font='16px sans-serif';ctx.fillText('⚓',47,25);}
+  if(s.repairing){ctx.strokeStyle='rgba(130,255,175,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,42,23,0,0,TAU);ctx.stroke();}
   if(s.cargo){ctx.fillStyle='#ffdd6a';ctx.fillRect(-25,-5,9,10);}
   // pennant streams with the wind
   const fa = Math.atan2(lwy, lwx), fl = 13 + 4 * wind.strength, wob = Math.sin(t * 9 + s.phase) * 3;
@@ -1154,6 +1169,7 @@ function boot(data) {
   COLORS.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.i = i; b.style.setProperty('--c', c.hex); b.setAttribute('role', 'radio'); b.setAttribute('aria-label', c.name); b.setAttribute('aria-pressed', 'false'); b.addEventListener('pointerdown', () => { chosen = i; store.set('color', i); refreshTitle(); SFX.init(); SFX.ui(); }); cs.appendChild(b); });
   bind('start', startMatch); bind('again', startMatch); bind('tomenu', toMenu);
   bind('fireL', () => { Input.fire[0] = true; }); bind('fireR', () => { Input.fire[1] = true; });
+  bind('anchor', toggleAnchor);
   bind('sailUp', () => { Input.sailDelta = 1; }); bind('sailDn', () => { Input.sailDelta = -1; });
   const toggleSound = () => { SFX.init(); SFX.toggle(); refreshTitle(); };
   bind('soundbtn', toggleSound); bind('mute', toggleSound);

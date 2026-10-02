@@ -8,7 +8,7 @@ One self-contained `index.html`, with no build step. Google Fonts is optional; s
 
 ## Controls
 
-Drag horizontally on the water to steer, or use A/D or the arrow keys. W/S or ▲/▼ change sails. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
+Drag horizontally on the water to steer, or use A/D or the arrow keys. W/S or ▲/▼ change sails. Tap ⚓ DROP ANCHOR (keyboard X) to brake and hold position; tap ⚓ RAISE ANCHOR to resume sailing with your existing sail setting. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
 
 ## Treasure and scoring
 
@@ -20,7 +20,7 @@ Carry one chest at a time. Cargo is visible on the minimap with a gold ring; sin
 
 Your hull meter is always visible. Hits flash the hull, show damage numbers, and leave visible scars as health falls. Sinking a rival still paints nearby sea in your color. Respawn takes 4.5 seconds, followed by 2.5 seconds of protection.
 
-Any dock repairs you at 12 hull per second when all sails are lowered and speed falls below 35. Taking damage pauses repairs for two seconds. There is no passive repair at sea. Delivering treasure does not require stopping.
+Any dock repairs you at 12 hull per second when anchored or with all sails lowered, once speed falls below 35. Dock guidance tells you when to drop anchor; the dock and ship glow green during repairs. Taking damage pauses repairs for two seconds. There is no passive repair at sea. Delivering treasure does not require stopping.
 
 ## Kraken waters
 
@@ -36,7 +36,7 @@ Serve this directory with any static HTTP server, or open `index.html` directly.
 node tests/gameplay.cjs
 ```
 
-The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, kraken warning/strike timing and safe gaps, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
+The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
 
 ## Deployment
 
