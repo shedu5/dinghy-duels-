@@ -687,7 +687,7 @@ function adventureHUD(s) {
   if(target) {const a=Math.atan2(target.y-s.y,target.x-s.x); const dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(s,target))+'m';}
   if(s.sunk) text='Cargo drops when you sink';
   else if(krakenDanger(s)) text=kraken.phase==='warning'?'KRAKEN WARNING · SAIL OUT OR SHOOT TENTACLES':kraken.phase==='strike'?'KRAKEN STRIKE!':'ESCAPE OR SHOOT A SAFE GAP';
-  else if(docks.some(d=>distanceTo(s,d)<DOCK_RADIUS)) text=s.repairing?'REPAIRING +12 HULL / SEC':s.sailLevel>0?'DROP SAILS TO REPAIR':s.speed>=35?'SLOWING TO REPAIR…':simTime-s.lastDamage<=2?'REPAIRS PAUSED · UNDER FIRE':'HULL READY · SET SAIL';
+  else if(s.hp < 100 && docks.some(d=>distanceTo(s,d)<DOCK_RADIUS)) text=s.repairing?'REPAIRING +12 HULL / SEC':s.sailLevel>0?'DROP SAILS TO REPAIR':s.speed>=35?'SLOWING TO REPAIR…':simTime-s.lastDamage<=2?'REPAIRS PAUSED · UNDER FIRE':'HULL READY · SET SAIL';
   $('objective').textContent=text;
 }
 
@@ -816,6 +816,7 @@ function controlPlayer(dt) {
 
 // ============================================================ match flow
 function setupWorld(withPlayer, colorIdx) {
+  resetToasts();
   islands = makeIslands(); ships = []; balls = []; particles = [];
   terr = new Territory();
   wind.dir = rand(TAU); wind.tDir = wind.dir; wind.strength = 1; wind.tStr = rand(0.85, 1.15); wind.timer = rand(10, 16);
@@ -872,6 +873,7 @@ function startMatch() {
   }, 900);
 }
 function endMatch() {
+  resetToasts();
   state = 'results'; showScreen('results');
   const ranked = ships.slice().sort((a, b) => totalScore(b) - totalScore(a) || terr.counts[b.owner] - terr.counts[a.owner]);
   const win = ranked[0], me = player, myRank = ranked.indexOf(me) + 1, myPct = terr.share(me.owner) * 100;
@@ -899,7 +901,8 @@ function refreshTitle() {
   $('shipname').textContent = 'The ' + COLORS[chosen].ship;
   for (const b of $('colors').children) b.setAttribute('aria-pressed', String(+b.dataset.i === chosen));
 }
-const toastQ = []; let toastBusy = false;
+const toastQ = []; let toastBusy = false, toastTimer = 0, toastGap = 0;
+function resetToasts() { clearTimeout(toastTimer); clearTimeout(toastGap); toastQ.length = 0; toastBusy = false; $('toast').classList.remove('show'); $('toast').textContent = ''; }
 function toast(big, small) {
   toastQ.push([big, small]); if (!toastBusy) nextToast();
 }
@@ -908,7 +911,7 @@ function nextToast() {
   toastBusy = true; const el = $('toast'); el.innerHTML = ''; el.appendChild(document.createTextNode(t[0]));
   if (t[1]) { const s = document.createElement('small'); s.textContent = t[1]; el.appendChild(s); }
   el.classList.add('show');
-  setTimeout(() => { el.classList.remove('show'); setTimeout(nextToast, 300); }, 1900);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); toastGap = setTimeout(nextToast, 300); }, 1900);
 }
 
 // ============================================================ rendering
