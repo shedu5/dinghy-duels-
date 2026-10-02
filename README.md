@@ -8,7 +8,14 @@ One self-contained `index.html`, with no build step. Google Fonts is optional; s
 
 ## Controls
 
-Drag the bottom-left thumbstick toward the direction you want to sail; release to hold your current course. You can also drag on the water to bring up a floating thumbstick. Touch steering uses compass direction, not relative rudder displacement. The boat begins turning immediately, including at low speed. Use your other thumb for guns and sails. A/D or the arrow keys still turn left/right. Interrupted touches, screen rotation, sinking, and focus loss clear steering input. W/S or ▲/▼ change sails. Tap ⚓ DROP ANCHOR (keyboard X) to brake and hold position; tap ⚓ RAISE ANCHOR to resume sailing with your existing sail setting. Q/E or Port/Starboard fire broadsides; Space chooses a side with a target. Cannons fire sideways, and slower sailing improves accuracy.
+Drag the bottom-left thumbstick toward the direction you want to sail; release to hold course. Dragging on the water also provides a floating thumbstick. A/D and Left/Right arrows turn the boat.
+
+There are exactly two gameplay buttons:
+
+- **FIRE:** Each tap immediately fires both broadsides, with no player reload delay. Space, Q, or E also fire both sides. You can fire with one thumb while steering with the other.
+- **ANCHOR:** Tap to stop and hold position; tap again to sail. Keyboard shortcut: X. Its green pressed state means the anchor is down.
+
+Sails are automatic. Sound can be toggled on the title screen. Touch cancellation, screen rotation, sinking, and focus loss clear steering input.
 
 ## Endless ocean
 
@@ -22,9 +29,9 @@ Carry one chest at a time. Cargo is visible on the minimap with a gold ring; sin
 
 ## Hull and repairs
 
-Your hull meter is always visible. Hits flash the hull, show damage numbers, and leave visible scars as health falls. Sinking a rival still paints nearby sea in your color. Respawn takes 4.5 seconds, followed by 2.5 seconds of protection.
+Sail through your own colored HOME dock ring to instantly restore full hull health. No anchor, slowing down, sail adjustment, or damage cooldown is required. Other captains' docks do not repair you. A green flash and HULL RESTORED message confirm the repair; the navigation hint points toward your own dock when damaged. Bots also repair at their own docks.
 
-Any dock repairs you at 12 hull per second when anchored or with all sails lowered, once speed falls below 35. Dock guidance tells you when to drop anchor; the dock and ship glow green during repairs. Taking damage pauses repairs for two seconds. There is no passive repair at sea. Delivering treasure does not require stopping.
+Hits flash the hull, show damage numbers, and leave visible scars as health falls. Sinking a rival paints nearby sea in your color. Respawn takes 4.5 seconds, followed by 2.5 seconds of protection.
 
 ## Kraken waters
 
@@ -40,7 +47,7 @@ Serve this directory with any static HTTP server, or open `index.html` directly.
 node tests/gameplay.cjs
 ```
 
-The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, repair cooldowns, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, thumbstick direction and release, low-speed turn response, independent second-finger gun/sail controls, cancellation and focus loss, all four map edges and corners, cross-edge cannon hits and territory, camera continuity, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
+The checks run game logic with a mock DOM/canvas. They cover treasure pickup/delivery and the score cap, sinking and cargo loss, instant own-color repairs, immediate repeat firing, anchor braking/holding/release and respawn reset, kraken warning/strike timing and safe gaps, thumbstick direction and release, low-speed turn response, independent second-finger firing, cancellation and focus loss, all four map edges and corners, cross-edge cannon hits and territory, camera continuity, a full simulated match, and restart. Browser checks are still needed for rendering, input, and sound.
 
 ## Deployment
 

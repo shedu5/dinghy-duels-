@@ -3,14 +3,20 @@ const noop=()=>{};const ctx=new Proxy({createLinearGradient:()=>({addColorStop:n
 const elements={};function el(){return {listeners:{},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn)},emit(name,e){for(const fn of this.listeners[name]||[])fn(e)},getBoundingClientRect:()=>({left:0,top:0,width:132,height:132}),setPointerCapture:noop,hasPointerCapture:()=>true,releasePointerCapture:noop,style:{setProperty:noop},classList:{add:noop,remove:noop,toggle:noop},children:[],appendChild(v){this.children.push(v)},append:noop,querySelector:()=>el(),setAttribute:noop,getContext:()=>ctx,width:168,height:168,clientWidth:720,clientHeight:786,dataset:{},hidden:false,innerHTML:''};}
 const document={getElementById:id=>elements[id]||=el(),createElement:el,createTextNode:t=>({textContent:t}),body:el(),addEventListener:noop};
 const windowEvents={};const sandbox={document,window:{addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn),devicePixelRatio:1,innerWidth:720,innerHeight:786},localStorage:{getItem:()=>null,setItem:noop},navigator:{},performance:{now:()=>0},setTimeout:noop,setInterval:noop,clearInterval:noop,clearTimeout:noop,requestAnimationFrame:noop,getComputedStyle:()=>({fontFamily:'sans-serif'}),console,Math,Uint8Array,Int32Array};
-let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={setupWorld,step,updateAdventure,updateShip,Input,controlPlayer,bind,updateBalls,shipCollisions,delta,bearing,resize,cam,wind,get balls(){return balls},toggleAnchor,damage,respawn,hitTentacle,totalScore,render,adventureHUD,endMatch,buildShareBar,get ships(){return ships},get treasure(){return treasure},get docks(){return docks},get kraken(){return kraken},get time(){return matchT},get state(){return state},get terr(){return terr},setTime(t){simTime=t},play(){state='play'}};})();`);
+let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={setupWorld,step,updateAdventure,updateShip,Input,controlPlayer,firePlayer,bind,updateBalls,shipCollisions,delta,bearing,resize,cam,wind,get balls(){return balls},toggleAnchor,damage,respawn,hitTentacle,totalScore,render,adventureHUD,endMatch,buildShareBar,get ships(){return ships},get treasure(){return treasure},get docks(){return docks},get kraken(){return kraken},get time(){return matchT},get state(){return state},get terr(){return terr},setTime(t){simTime=t},play(){state='play'}};})();`);
 vm.createContext(sandbox);vm.runInContext(source,sandbox);const g=sandbox.test;
 function setup(){g.setupWorld(true,0);g.buildShareBar();g.play();return g.ships[0]}
 let s=setup();assert.equal(g.docks.length,5);assert.ok(g.treasure.length>=3);
 let chest=g.treasure[0];s.x=chest.x;s.y=chest.y;g.updateAdventure(.01);assert.ok(s.cargo);assert.equal(s.gold,0);
 s.x=s.home.x;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.gold,2);assert.equal(s.cargo,null);
 s.cargo={value:4};s.gold=6;g.updateAdventure(.01);assert.equal(s.gold,8);assert.equal(s.cargo,null);
-s.hp=40;s.sailLevel=0;s.speed=0;g.updateAdventure(1);assert.equal(s.hp,52);g.damage(s,11,g.ships[1]);g.updateAdventure(1);assert.equal(s.hp,41);
+s=setup();s.hp=40;s.sailLevel=2;s.speed=175;s.lastDamage=0;s.x=s.home.x;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.hp,100);assert.equal(s.speed,175);assert.equal(s.anchored,false);assert.ok(s.repairing);
+s.hp=40;s.x=g.docks[1].x;s.y=g.docks[1].y;g.updateAdventure(.01);assert.equal(s.hp,40);
+s.x=s.home.x+101;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.hp,40);
+s.x=s.home.x+99;g.updateAdventure(.01);assert.equal(s.hp,100);
+// Every tap fires both sides immediately, even in the same simulation frame.
+s=setup();g.firePlayer();assert.equal(g.balls.length,10);g.firePlayer();assert.equal(g.balls.length,20);assert.deepEqual(Array.from(s.reload),[0,0]);
+g.damage(s,101,null);g.firePlayer();assert.equal(g.balls.length,20);g.respawn(s);g.firePlayer();assert.equal(g.balls.length,30);
 s=setup();s.cargo={value:4};g.damage(s,101,null);assert.ok(s.sunk);assert.equal(s.cargo,null);assert.ok(g.treasure.some(t=>t.value===4));g.respawn(s);assert.equal(s.hp,100);
 s=setup();g.setTime(35);g.updateAdventure(.01);assert.equal(g.kraken.phase,'warning');s.x=1200;s.y=1200;const hp=s.hp;g.updateAdventure(4.99);assert.equal(s.hp,hp);g.updateAdventure(2.6);assert.equal(s.hp,hp-22);g.updateAdventure(.1);assert.equal(s.hp,hp-22);
 const a=g.kraken.arms[0];for(let i=0;i<3;i++)assert.ok(g.hitTentacle({x:a.x,y:a.y}));assert.equal(a.hp,0);s.x=a.x;s.y=a.y;g.updateAdventure(5);assert.equal(s.hp,hp-22);g.updateAdventure(30);assert.equal(g.kraken.phase,'gone');
@@ -18,7 +24,7 @@ const a=g.kraken.arms[0];for(let i=0;i<3;i++)assert.ok(g.hitTentacle({x:a.x,y:a.
 s=setup();s.x=s.home.x;s.y=s.home.y;s.speed=100;s.hp=40;s.sailLevel=2;const sail=s.sailLevel;
 g.toggleAnchor();assert.equal(s.anchored,true);assert.equal(s.sailLevel,sail);
 for(let i=0;i<120;i++){g.updateShip(s,1/60);g.updateAdventure(1/60)}
-assert.equal(s.speed,0);assert.ok(s.hp>40);assert.ok(s.repairing);
+assert.equal(s.speed,0);assert.equal(s.hp,100);
 const x=s.x,y=s.y;g.updateShip(s,1);assert.equal(s.x,x);assert.equal(s.y,y);
 g.toggleAnchor();assert.equal(s.anchored,false);assert.equal(s.sailLevel,sail);s.heading=0;g.updateShip(s,1/60);assert.ok(s.speed>0);
 s.anchored=true;g.respawn(s);assert.equal(s.anchored,false);s.invuln=0;g.damage(s,101,null);g.toggleAnchor();assert.equal(s.anchored,false);
@@ -52,13 +58,13 @@ const bot=g.ships[1];bot.x=2390;bot.y=100;assert.equal(bot.brain.probe(0,150),fa
 g.resize();for(const x of [1,2399])for(const y of [1,2399]){g.cam.x=x;g.cam.y=y;g.render(0);}
 // Real pointer handlers: visible helm, direct heading, low-speed turn and multitouch isolation.
 s=setup();s.x=1200;s.y=1200;s.heading=0;s.speed=0;s.sailLevel=0;
-const input=g.Input;input.init(elements.game);g.bind('fireL',()=>input.fire[0]=true);g.bind('sailUp',()=>input.sailDelta=1);
+const input=g.Input;input.init(elements.game);g.bind('fire',g.firePlayer);g.bind('anchor',g.toggleAnchor);
 const event=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',button:0,preventDefault:noop});
 elements.wheel.emit('pointerdown',event(10,66,66));assert.equal(input.heading,null);
 elements.wheel.emit('pointermove',event(10,66,24));assert.equal(input.heading,-Math.PI/2);
 g.controlPlayer(1/60);assert.equal(s.rudder,-1);g.updateShip(s,1/60);assert.ok(s.heading<-.03);
-// A second finger can fire or change sails without taking ownership of the helm.
-elements.fireL.emit('pointerdown',event(20,300,700));elements.sailUp.emit('pointerdown',event(21,300,600));assert.equal(input.steerId,10);g.controlPlayer(1/60);assert.ok(g.balls.length>0);assert.equal(s.sailLevel,1);
+// A second finger fires instantly without taking ownership of the helm.
+elements.fire.emit('pointerdown',event(20,300,700));elements.fire.emit('pointerdown',event(21,300,700));assert.equal(input.steerId,10);assert.equal(g.balls.length,20);g.controlPlayer(1/60);assert.equal(s.sailLevel,2);
 elements.game.emit('pointerdown',event(22,100,100));assert.equal(input.steerId,10);
 elements.wheel.emit('pointerup',event(20,66,24));assert.equal(input.steerId,10);
 for(let i=0;i<90;i++){g.controlPlayer(1/60);g.updateShip(s,1/60)}assert.ok(Math.abs(s.heading+Math.PI/2)<.015,'Helm converges promptly without overshoot');
@@ -74,4 +80,4 @@ s=setup();for(let i=0;i<9002;i++){g.step(1/60);if(i%120===0){g.render(i/60);g.ad
 assert.equal(g.state,'results');assert.equal(g.time,0);for(const o of g.ships){assert.ok(Number.isFinite(g.totalScore(o)));assert.ok(o.gold<=8);assert.ok(o.hp>=0&&o.hp<=100)}
 console.log('Full match:',g.ships.map(s=>({name:s.name,gold:s.gold,score:g.totalScore(s).toFixed(1),hp:Math.round(s.hp)})));
 s=setup();assert.equal(g.kraken,null);assert.equal(s.gold,0);assert.equal(s.cargo,null);
-console.log('PASS: pickup/delivery/cap, cargo loss/respawn, repair/damage cooldown, warning/strike cadence/safe gaps/retreat, full match and restart');
+console.log('PASS: pickup/delivery/cap, cargo loss/respawn, instant own-color repair/no reload, warning/strike cadence/safe gaps/retreat, full match and restart');
