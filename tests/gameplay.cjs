@@ -3,10 +3,11 @@ const noop=()=>{};const ctx=new Proxy({createLinearGradient:()=>({addColorStop:n
 const elements={};function el(){return {listeners:{},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn)},emit(name,e){for(const fn of this.listeners[name]||[])fn(e)},getBoundingClientRect:()=>({left:0,top:0,width:132,height:132}),setPointerCapture:noop,hasPointerCapture:()=>true,releasePointerCapture:noop,style:{setProperty:noop},classList:{add:noop,remove:noop,toggle:noop},children:[],appendChild(v){this.children.push(v)},append:noop,querySelector:()=>el(),setAttribute:noop,getContext:()=>ctx,width:168,height:168,clientWidth:720,clientHeight:786,dataset:{},hidden:false,innerHTML:''};}
 const document={getElementById:id=>elements[id]||=el(),createElement:el,createTextNode:t=>({textContent:t}),body:el(),addEventListener:noop};
 const saved=new Map();const windowEvents={};const sandbox={document,window:{addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn),devicePixelRatio:1,innerWidth:720,innerHeight:786},localStorage:{getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)},navigator:{},performance:{now:()=>0},setTimeout:noop,setInterval:noop,clearInterval:noop,clearTimeout:noop,requestAnimationFrame:noop,getComputedStyle:()=>({fontFamily:'sans-serif'}),console,Math,Uint8Array,Int32Array};
-let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={globePoint,globeOffset,crossPole,CHANNELS,dist,updateBalls,beginRound,LEVELS,seaAt,seaLine,geo,landAt,updateCampaign,chooseUpgrade,continueVoyage,FireControl,installTouchGuard,Input,controlPlayer,firePlayer,updateAdventure,updateShip,damage,step,render,endMatch,resize,wind,cam,delta,refreshVoyage,toMenu,boot,get voyage(){return voyage},get mission(){return mission},get ships(){return ships},get treasure(){return treasure},get balls(){return balls},get state(){return state},get terr(){return terr},get time(){return matchT},setTime(t){simTime=t}};})();`);
+let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={globePoint,globeOffset,crossPole,CHANNELS,dist,updateBalls,updateHUD,beginRound,LEVELS,seaAt,seaLine,geo,landAt,updateCampaign,chooseUpgrade,continueVoyage,FireControl,installTouchGuard,Input,controlPlayer,firePlayer,updateAdventure,updateShip,damage,step,render,endMatch,resize,wind,cam,delta,refreshVoyage,toMenu,boot,get voyage(){return voyage},get mission(){return mission},get ships(){return ships},get treasure(){return treasure},get balls(){return balls},get state(){return state},get terr(){return terr},get time(){return matchT},setTime(t){simTime=t}};})();`);
 vm.createContext(sandbox);vm.runInContext(source,sandbox);const g=sandbox.test;
 
 g.boot({});
+assert.ok(Math.abs((g.geo(10,0).x-g.geo(0,0).x)-(g.geo(0,0).y-g.geo(0,10).y))<1e-9,'Map has equal longitude and latitude scale');
 function start(i=0){g.beginRound('campaign',i);return g.ships[0]}
 for(let i=0;i<10;i++){
  const s=start(i),m=g.mission;
@@ -14,7 +15,7 @@ for(let i=0;i<10;i++){
  for(const ship of g.ships)assert.ok(g.seaAt(ship,25),`Level ${i+1} ship spawn is sea`);
  for(const chest of g.treasure)assert.ok(g.seaAt(chest,60));
  let prev=m.center;for(const p of m.route){assert.ok(g.seaLine(prev,p,30));prev=p;}
- assert.ok(g.treasure.filter(t=>t.arctic).length>=6);g.resize();g.render(0);g.step(1/60);
+ assert.ok(g.treasure.filter(t=>t.arctic).length>=6);g.resize();g.render(0);g.updateHUD();g.step(1/60);
 }
 assert.ok(g.landAt(...Object.values(g.geo(20,20))));assert.ok(!g.landAt(...Object.values(g.geo(-140,0))));
 let s=start();const chest=g.treasure[0];s.x=chest.x+90;s.y=chest.y;g.updateAdventure(.01);assert.equal(s.cargo,null);
@@ -57,8 +58,8 @@ g.beginRound('bonus');for(let i=0;i<3602&&g.state==='play';i++)g.step(1/60);asse
 for(const {a,b} of g.CHANNELS)for(let t=0;t<=1;t+=.02){const p=g.globePoint(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);assert.ok(g.seaAt(p,32),'Navigable channel clearance');}
 s=start();for(const chest of g.treasure.filter(t=>t.arctic)){assert.ok(chest.y<320,'Treasure remains in Arctic latitudes');assert.ok(g.seaAt(chest,32));}
 // Pole crossing reflects latitude and shifts longitude 180 degrees instead of teleporting to Antarctica.
-let p=g.globePoint(300,-10);assert.equal(p.x,1500);assert.equal(p.y,10);assert.ok(p.flip);p=g.globePoint(300,2410);assert.equal(p.x,1500);assert.equal(p.y,2390);
-assert.equal(g.dist(300,5,1500,5),10);assert.equal(g.dist(2395,400,5,400),10);assert.ok(g.dist(300,5,300,2395)>1000);
+let p=g.globePoint(300,-10);assert.equal(p.x,1500);assert.equal(p.y,10);assert.ok(p.flip);p=g.globePoint(300,1210);assert.equal(p.x,1500);assert.equal(p.y,1190);
+assert.equal(g.dist(300,5,1500,5),10);assert.equal(g.dist(2395,400,5,400),10);assert.ok(g.dist(300,5,300,1195)>1000);
 s=start();s.x=300;s.y=1;s.heading=-Math.PI/2;s.speed=120;s.sailSet=1;g.wind.dir=0;g.wind.vx=1;g.wind.vy=0;g.updateShip(s,.1);assert.ok(s.y<20&&s.x>1400);assert.ok(s.heading>0);assert.equal(s.grounded,false);
 g.cam.x=s.x;g.cam.y=1;g.render(0);
 // Cannonballs follow the same pole crossing and can hit on the opposite meridian.
