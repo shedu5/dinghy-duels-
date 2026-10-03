@@ -875,7 +875,7 @@ function shipCollisions(dt) {
 const CARGO_CAPACITY=2;
 const cargoBoxes=s=>s.cargo?(s.cargo.boxes||[{value:s.cargo.value}]):[];
 const cargoLabel=s=>'CARGO '+cargoBoxes(s).length+'/'+CARGO_CAPACITY+' · +'+s.cargo.value;
-const TREASURE_CAP = 8, DOCK_RADIUS = 100, TREASURE_RADIUS=115;
+const TREASURE_CAP = 8, DOCK_RADIUS = 50, TREASURE_RADIUS=86.25;
 let docks = [], treasure = [], kraken = null, combatText = [];
 const totalScore = s => terr.share(s.owner) * 100 + s.gold;
 const distanceTo = (a, b) => dist(a.x, a.y, b.x, b.y);

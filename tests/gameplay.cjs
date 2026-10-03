@@ -19,8 +19,8 @@ for(let i=0;i<10;i++){
  assert.ok(g.treasure.filter(t=>t.arctic).length>=6);g.resize();g.render(0);g.updateHUD();g.step(1/60);
 }
 assert.ok(g.landAt(...Object.values(g.geo(20,20))));assert.ok(!g.landAt(...Object.values(g.geo(-140,0))));
-let s=start();const chest=g.treasure[0];s.x=chest.x+90;s.y=chest.y;g.updateAdventure(.01);assert.equal(s.cargo,null);
-s.x=chest.x+70;g.updateAdventure(.01);assert.ok(s.cargo);assert.ok(g.treasure.length>=6);
+let s=start();const chest=g.treasure[0];s.x=chest.x+60;s.y=chest.y;g.updateAdventure(.01);assert.equal(s.cargo,null);
+s.x=chest.x+40;g.updateAdventure(.01);assert.ok(s.cargo);assert.ok(g.treasure.length>=6);
 s.hp=30;s.speed=100;s.x=s.home.x;s.y=s.home.y;const bank=g.voyage.treasure;g.updateAdventure(.01);assert.equal(s.hp,100);assert.equal(s.speed,100);assert.equal(s.cargo,null);assert.equal(g.voyage.treasure,bank+2);
 s=start();s.cargo={value:4};s.invuln=0;g.damage(s,101,null);assert.ok(g.treasure.some(t=>t.value===4));g.updateCampaign(.01);assert.equal(g.state,'results');g.continueVoyage();assert.equal(g.mission.index,0);
 // The first level is an untimed, enemy-free tutorial with guided completion.
