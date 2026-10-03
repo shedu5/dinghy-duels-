@@ -12,6 +12,9 @@
 #minimap{height:auto!important;aspect-ratio:2/1}
 #puzzle{position:fixed;inset:0;z-index:50;overflow-y:auto;background:#061e2ef5;color:#f6e8c8;padding:20px;box-sizing:border-box;touch-action:pan-y}#puzzle[hidden]{display:none}.puzzle-panel{max-width:520px;margin:0 auto;text-align:center;padding-bottom:24px}.puzzle-panel h2{font-size:32px;margin:12px 0}.puzzle-panel p{font-size:17px;line-height:1.45}.puzzle-choice,.puzzle-actions button{background:#294958;border:1px solid #ccb278;color:#fff1d1;border-radius:10px;min-height:48px;padding:12px;font:inherit;cursor:pointer;touch-action:manipulation}.puzzle-choice{display:block;width:min(100%,460px);margin:12px auto}.puzzle-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.puzzle-actions button{flex:1;min-width:100px}.puzzle-actions button:disabled{opacity:.3}#knot-board{display:block;width:100%;max-width:360px;margin:auto;touch-action:none}#puzzle-message{min-height:50px;color:#ffdd89}.puzzle-success{font-size:27px;color:#a3ecc1;padding:36px 0}.lock-diagram{display:flex;gap:10px;align-items:stretch;margin:24px 0}.lock-diagram>div{flex:1;background:#10394d;padding:15px 5px;border:2px solid #b9a277;border-radius:8px;font-size:17px}.water-level{background:#58b8d6;margin-top:12px;border-radius:4px}#shortcut-status{font-size:12px;color:#d9cba8;margin-top:7px}
 .bottle-rack{display:flex;flex-wrap:wrap;justify-content:center;gap:18px 14px;padding:22px 6px}.bottle{width:84px;background:none;border:0;padding:0;color:#fff1cf;cursor:pointer;touch-action:manipulation}.bottle-glass{height:132px;display:flex;flex-direction:column-reverse;border:3px solid #9dbac8;border-top:8px solid #c8dbe4;border-radius:9px 9px 24px 24px;overflow:hidden;background:#0b2c3d;transition:transform .15s,box-shadow .15s}.bottle.selected .bottle-glass{transform:translateY(-10px) rotate(-4deg);box-shadow:0 0 0 3px #ffe08a}.dye{height:31px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#133344;font-size:22px;border-top:1px solid #ffffff88;box-sizing:border-box}.bottle-number{display:block;margin-top:9px;font-size:18px}#knot-board{border-radius:20px;background:#0b2b3b;box-shadow:inset 0 0 35px #0004;margin:18px auto;}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style>
 <style>
 .statusbox{width:100%;max-width:280px;font-size:14px;font-weight:700;text-align:center;text-shadow:0 1px 3px #000}
@@ -23,6 +26,9 @@
 @media(max-width:400px){.windbox{width:76px}#minimap{width:68px;height:68px}.hud-top{gap:7px}#objective{font-size:12px}#scoretext{font-size:12px}}
 
 #minimap{height:auto!important;aspect-ratio:2/1}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style></head>
 <body>
 <title>Dinghy Duels</title>
@@ -129,6 +135,9 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 @media (prefers-reduced-motion:reduce){ .share i{transition:none} #toast{transition:none} }
 
 #minimap{height:auto!important;aspect-ratio:2/1}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style>
 
 <style>#hint{top:170px;font-size:11px}
@@ -136,6 +145,9 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 @media(max-width:360px){#wheel{width:116px;height:116px}.fire button{width:78px;height:78px}.fire{gap:8px}}
 @media(max-height:480px){#wheel{width:108px;height:108px}.fire button{width:66px;height:66px}.rightctl{gap:6px}#anchor{min-height:38px;padding:5px 10px}}
 #minimap{height:auto!important;aspect-ratio:2/1}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style>
 <style>
 .fire button::before{display:none}.fire button{width:108px;height:108px}.fire button .lbl{font-size:20px;letter-spacing:.08em;color:#fff1c5}.fire button:disabled{opacity:.4}
@@ -143,6 +155,9 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 @media(max-height:480px){.fire button{width:82px;height:82px}.rightctl{gap:8px}#anchor{min-height:44px}}
 
 #minimap{height:auto!important;aspect-ratio:2/1}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style>
 <style>
 #app{touch-action:manipulation}#hud,#hud *,#game,#touchhelm{touch-action:none}#title,#results{touch-action:pan-y;justify-content:flex-start;padding-top:22px}#title h1{font-size:clamp(42px,12vw,72px)}
@@ -151,6 +166,9 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
 #objective{white-space:pre-line;background:#071f2f99;border-radius:5px;padding:4px}#results .btns{padding-bottom:30px}.howto{margin-bottom:15px}
 
 #minimap{height:auto!important;aspect-ratio:2/1}
+@keyframes objectiveIntro{0%,55%{font-size:20px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 14px #ffe09480}100%{font-size:14px}}
+@media(max-width:400px){@keyframes objectiveIntro{0%,55%{font-size:17px;color:#fff3bd;background:#163e50f2;box-shadow:0 0 12px #ffe09480}100%{font-size:12px}}}
+@media(prefers-reduced-motion:reduce){#objective{animation:none!important}}
 </style>
 <div id="app">
   <canvas id="game"></canvas>
@@ -314,8 +332,8 @@ function drawMapLabels(c,flipped=false){
 }
 const LEVELS=[
  {name:'Learn the Ropes',type:'tutorial',region:'Central Pacific',lon:-145,lat:15,time:0,enemies:0},
- {name:'Island Signals',type:'capture',region:'Central Pacific',lon:-145,lat:0,time:120,enemies:1,count:2,hold:3},
- {name:'Merchant Passage',type:'escort',region:'South Atlantic',lon:-15,lat:-30,time:130,enemies:1,stops:2},
+ {name:'Island Signals',type:'capture',region:'Central Pacific',lon:-145,lat:0,time:120,enemies:0,count:2,hold:3},
+ {name:'Merchant Passage',type:'escort',region:'South Atlantic',lon:-15,lat:-30,time:130,enemies:0,stops:2},
  {name:'Weather the Squall',type:'storm',region:'Indian Ocean',lon:75,lat:-20,time:35,enemies:0,storm:1},
  {name:'Indian Ocean Admiral',type:'flagship',region:'Indian Ocean',lon:75,lat:-15,time:130,enemies:2,hp:200},
  {name:'Three Island Code',type:'capture',region:'South Pacific',lon:-135,lat:-20,time:150,enemies:2,count:3,hold:4},
@@ -426,9 +444,12 @@ function prepareMission(index){
 
  matchT=l.time;cam.follow=player;cam.x=player.x;cam.y=player.y;
 }
+let objectiveKey="";
+function showObjective(text,key){const el=$("objective");el.textContent=text;if(key!==objectiveKey){objectiveKey=key;el.style.animation="none";void el.offsetWidth;el.style.animation="objectiveIntro 3.5s ease-out both";}}
 function beginRound(nextMode,index=voyage.next){
+ objectiveKey="";
  harborOffered=false;cam.inverted=false;mode=nextMode;mission=null;setupWorld(true,chosen);nextPlayerShot=0;
- if(mode==='campaign')prepareMission(index);else{matchT=60;player.maxHp=100+voyage.upgrades.hull*20;player.hp=player.maxHp;player.power=1+voyage.upgrades.cannon*.15;player.speedBoost=1+voyage.upgrades.speed*.07;}
+ if(mode==='campaign')prepareMission(index);else{if(voyage.next<=3){ships=ships.filter(s=>s.isPlayer);assignHarbors(player);}matchT=60;player.maxHp=100+voyage.upgrades.hull*20;player.hp=player.maxHp;player.power=1+voyage.upgrades.cannon*.15;player.speedBoost=1+voyage.upgrades.speed*.07;}
  buildShareBar();state='play';showScreen(null);$('sharebar').hidden=mode!=='bonus';SFX.init();SFX.resume();
  toast(mode==='bonus'?'BONUS · PAINT THE SEA':'LEVEL '+(index+1),mode==='bonus'?'Claim 5% in 60 seconds to earn an upgrade.':levelBrief(LEVELS[index]));
 }
@@ -479,16 +500,16 @@ function updateCampaign(dt){
 }
 function missionTarget(){if(!mission)return null;if(mission.level.type==='tutorial')return mission.tutorialStep===0?mission.trainingChest:player.home;return mission.flagship||mission.merchant||mission.flags[mission.progress]||null;}
 function campaignHUD(){
- if(mode==='bonus'){$('scoretext').textContent='BONUS '+(terr.share(player.owner)*100).toFixed(1)+'% / 5%';$('objective').textContent='PAINT THE SEA · WIN A SHIP UPGRADE';return;}
+ if(mode==='bonus'){$('scoretext').textContent='BONUS '+(terr.share(player.owner)*100).toFixed(1)+'% / 5%';showObjective('SAIL TO COLOR THE SEA\nClaim 5% to earn a ship upgrade','bonus');return;}
  if(!mission)return;const m=mission,l=m.level;let text='';
- if(l.type==='tutorial')text=['STEER INTO THE GOLD CIRCLE','BRING YOUR TREASURE HOME','TAP ANCHOR TO STOP','HOLD FIRE TO PRACTICE'][m.tutorialStep];
+ if(l.type==='tutorial')text=['SAIL INTO THE GOLD TREASURE CIRCLE','SAIL INTO YOUR HOME REPAIR CIRCLE','TAP ANCHOR (BOTTOM LEFT) TO STOP','HOLD FIRE (BOTTOM RIGHT) TO PRACTICE'][m.tutorialStep];
  else if(l.type==='flagship')text=(l.boss?(m.shield?'ARMOR CLOSED · EVADE':'ARMOR OPEN · FIRE'):'SINK THE FLAGSHIP')+' · HULL '+Math.ceil(m.flagship.hp);
- else if(l.type==='capture'){const f=m.flags[m.progress];text=f?'SIGNAL '+f.label+'/'+m.flags.length+' · ANCHOR '+Math.max(0,l.hold-f.charge).toFixed(1)+'s':'SIGNALS SECURED';}
- else if(l.type==='escort')text='ESCORT '+m.waypoint+'/'+m.route.length+' · MERCHANT '+Math.ceil(m.merchant.hp)+' HP'+(distanceTo(player,m.merchant)>340?' · WAITING FOR YOU':'');
+ else if(l.type==='capture'){const f=m.flags[m.progress];text=f?(distanceTo(player,f)<68?'TAP ANCHOR · HOLD POSITION ':'SAIL INTO SIGNAL '+f.label+' CIRCLE · THEN ANCHOR ')+'('+Math.max(0,l.hold-f.charge).toFixed(1)+'s)':'SIGNALS SECURED';}
+ else if(l.type==='escort')text=(distanceTo(player,m.merchant)>340?'SAIL BACK TO THE MERCHANT':'FOLLOW THE MERCHANT · STAY CLOSE')+' · STOP '+(m.waypoint+1)+'/'+m.route.length;
  else text='SURVIVE · LEAVE RED CIRCLES BEFORE LIGHTNING';
- const target=missionTarget();if(target){const a=bearing(player,target)*(cam.inverted?-1:1),dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+=' '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(player,target))+'m';}
+ const target=l.type==='tutorial'&&m.tutorialStep>=2?null:missionTarget();if(target){const a=bearing(player,target)*(cam.inverted?-1:1),dirs=['→','↘','↓','↙','←','↖','↑','↗'];const label=l.type==='tutorial'?(m.tutorialStep===0?'TREASURE':player.home.name):l.type==='capture'?'SIGNAL '+(m.progress+1):l.type==='escort'?'MERCHANT':'FLAGSHIP';text+='\n'+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+label+' · '+Math.round(distanceTo(player,target))+' m';}
  if(player.cargo||player.hp<player.maxHp){const a=bearing(player,player.home)*(cam.inverted?-1:1),dirs=['→','↘','↓','↙','←','↖','↑','↗'];text+='\n'+(player.cargo?cargoLabel(player):'REPAIR')+' · HOME '+dirs[(Math.round(a/(Math.PI/4))+8)%8]+' '+Math.round(distanceTo(player,player.home))+'m';}
- $('scoretext').textContent='LEVEL '+(m.index+1)+' / 10 · '+difficulty(m.index);$('objective').textContent=text;
+ $('scoretext').textContent='LEVEL '+(m.index+1)+' / 10 · '+difficulty(m.index);showObjective(text,m.index+':'+m.tutorialStep+':'+m.progress+':'+m.waypoint);
 }
 function drawMission(t){
  if(mode!=='campaign'||!mission)return;const m=mission;ctx.textAlign='center';ctx.font='bold 15px sans-serif';

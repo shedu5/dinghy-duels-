@@ -102,3 +102,6 @@ g.openPuzzles();g.selectPuzzle('panama');for(const [part,dy] of [['collar',-48],
 
 assert.equal(JSON.stringify(g.coastalPorts()),fixedPorts,'Canal unlocks do not move city ports');
 console.log('PASS: fixed city port locations across all levels and canal unlocks');
+for(let level=0;level<3;level++){start(level);assert.ok(g.ships.every(s=>s.isPlayer||s.isMerchant),'Easy missions have no enemies');g.updateHUD();assert.match(elements.objective.textContent,/m/);assert.match(elements.objective.style.animation,/objectiveIntro/);}
+s=start();s.x=g.mission.trainingChest.x;s.y=g.mission.trainingChest.y;g.updateAdventure(.01);g.updateCampaign(.01);g.updateHUD();assert.match(elements.objective.textContent,/HOME REPAIR CIRCLE/);assert.match(elements.objective.textContent,new RegExp(s.home.name));
+console.log('PASS: enemy-free easy missions and prominent directional objective guidance');
