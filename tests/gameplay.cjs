@@ -44,7 +44,7 @@ s=start(3);g.endMatch();assert.equal(elements.resulttitle.textContent,'LEVEL COM
 s=start(9);m=g.mission;m.flagship.invuln=0;g.setTime(0);g.updateCampaign(.01);g.damage(m.flagship,11,s);assert.equal(m.flagship.hp,360);g.setTime(4);g.updateCampaign(.01);g.damage(m.flagship,11,s);assert.equal(m.flagship.hp,349);
 // Held fire has a short cadence and independent pointer capture.
 s=start();const event=(id,x=66,y=66)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',button:0,preventDefault:noop});
-elements.wheel.emit('pointerdown',event(10));elements.wheel.emit('pointermove',event(10,66,24));assert.equal(g.Input.heading,-Math.PI/2);
+elements.game.emit('pointerdown',event(10));elements.game.emit('pointermove',event(10,66,24));assert.equal(g.Input.heading,-Math.PI/2);
 elements.fire.emit('pointerdown',event(20));assert.equal(g.balls.length,10);elements.fire.emit('pointerdown',event(21));assert.equal(g.balls.length,10);assert.equal(g.Input.steerId,10);
 g.setTime(.25);g.controlPlayer(.01);assert.equal(g.balls.length,20);elements.fire.emit('pointercancel',event(20));g.setTime(.5);g.controlPlayer(.01);assert.equal(g.balls.length,20);g.Input.reset();assert.equal(g.Input.steerId,null);
 for(const type of ['touchstart','touchmove','touchend','gesturestart','gesturechange','dblclick']){let prevented=false;elements.app.emit(type,{cancelable:true,preventDefault(){prevented=true}});assert.ok(prevented,type)}
@@ -55,7 +55,7 @@ g.chooseUpgrade('hull');assert.equal(g.voyage.upgrades.hull,1);assert.equal(g.vo
 assert.ok([...saved.values()].some(v=>String(v).includes('"hull":1')));s=start();assert.equal(s.maxHp,120);s.hp=20;s.x=s.home.x;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.hp,120);
 g.beginRound('bonus');for(let i=0;i<3602&&g.state==='play';i++)g.step(1/60);assert.equal(g.state,'results');assert.equal(g.time,0);
 // Northern straits fit the entire hull all along each widened passage, including the date line.
-for(const {a,b} of g.CHANNELS)for(let t=0;t<=1;t+=.02){const p=g.globePoint(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);assert.ok(g.seaAt(p,32),'Navigable channel clearance');}
+for(const {a,b,radius} of g.CHANNELS)for(let t=0;t<=1;t+=.02){const p=g.globePoint(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);assert.ok(g.seaAt(p,radius>=55?32:20),'Navigable channel clearance');}
 s=start();for(const chest of g.treasure.filter(t=>t.arctic)){assert.ok(chest.y<320,'Treasure remains in Arctic latitudes');assert.ok(g.seaAt(chest,32));}
 // Pole crossing reflects latitude and shifts longitude 180 degrees instead of teleporting to Antarctica.
 let p=g.globePoint(300,-10);assert.equal(p.x,1500);assert.equal(p.y,10);assert.ok(p.flip);p=g.globePoint(300,1210);assert.equal(p.x,1500);assert.equal(p.y,1190);
@@ -72,6 +72,11 @@ g.treasure.push({x:s.x,y:s.y,value:2,readyAt:0},{x:s.x,y:s.y,value:4,readyAt:0},
 g.updateAdventure(.01);assert.equal(s.cargo.boxes.length,2);assert.equal(s.cargo.value,6);assert.equal(g.treasure.length,1);g.updateAdventure(.01);assert.equal(g.treasure.length,1);
 const beforeBank=g.voyage.treasure;s.x=s.home.x;s.y=s.home.y;g.updateAdventure(.01);assert.equal(s.gold,6);assert.equal(s.deliveries,2);assert.equal(s.cargo,null);assert.equal(g.voyage.treasure,beforeBank+6);
 s=start();s.x=1200;s.y=100;g.treasure.length=0;g.treasure.push({x:s.x,y:s.y,value:2,readyAt:0},{x:s.x,y:s.y,value:4,readyAt:0});g.updateAdventure(.01);s.invuln=0;g.damage(s,999,null);assert.equal(s.cargo,null);assert.deepEqual(Array.from(g.treasure,t=>t.value).sort(),[2,4]);assert.ok(g.treasure.every(t=>t.readyAt===1));
+// Holding screen-up across the pole keeps the same screen course instead of oscillating.
+s=start();s.x=300;s.y=1;s.heading=-Math.PI/2;s.speed=100;g.cam.x=300;g.cam.y=15;g.Input.steerId=99;g.Input.heading=-Math.PI/2;g.wind.dir=0;g.wind.vx=1;g.wind.vy=0;g.controlPlayer(.01);g.updateShip(s,.05);assert.equal(g.cam.inverted,true);assert.equal(g.Input.heading,-Math.PI/2);assert.equal(g.cam.y,-15);
+for(let i=0;i<60;i++){g.controlPlayer(1/60);g.updateShip(s,1/60)}assert.equal(g.cam.inverted,true);assert.ok(s.y>20);assert.ok(s.heading>0);g.Input.reset();
+// Headwinds still allow deliberate forward movement and low-speed steering.
+s=start();Object.assign(s,g.geo(-140,0));s.heading=0;s.speed=0;g.wind.dir=Math.PI;g.wind.vx=-1;g.wind.vy=0;let sx=s.x;for(let i=0;i<180;i++)g.updateShip(s,1/60);assert.ok(s.speed>35);assert.ok(s.x>sx+60);
 // Full simulation catches invalid actor state across all mission types.
 for(let level=1;level<10;level++){s=start(level);for(let frame=0;frame<12000&&g.state==='play';frame++){g.step(1/60);if(frame%600===0)g.render(frame/60)}assert.equal(g.state,'results');for(const ship of g.ships){assert.ok(Number.isFinite(ship.x)&&Number.isFinite(ship.hp));assert.ok(ship.hp>=0&&ship.hp<=ship.maxHp)}}
 console.log('PASS: two-box pickup/capacity/banking/separate drops, enemy-free tutorial, Arctic treasure, navigable straits, pole/date-line crossing, ten mission setups and full simulations, Earth routes, treasure circle and banking, drive-through repair, objective success/failure, boss armor, held fire, multitouch and zoom guards');

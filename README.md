@@ -8,10 +8,10 @@ One self-contained `index.html`; no build step or runtime map download. Google F
 
 ## Controls
 
-Point the bottom-left thumbstick where you want to sail; release to hold course. Dragging on the sea also provides a floating thumbstick. A/D or Left/Right arrows turn the boat. Sails are automatic.
+Drag on the sea toward the direction you want to sail; release to hold course. A small touch indicator appears only while dragging. The permanent steering wheel graphic is removed. A/D or Left/Right arrows turn the boat. Sails are automatic.
 
 - **FIRE:** Tap or hold for both broadsides, at most once every 0.24 seconds. Space, Q or E also work. Steer and fire with separate fingers.
-- **ANCHOR:** Stop and hold position; tap again to sail. Keyboard: X.
+- **ANCHOR (bottom-left, separated from FIRE at bottom-right):** Stop and hold position; tap again to sail. Keyboard: X.
 
 These are the two gameplay buttons. Sound is on the title screen. Gameplay blocks double-tap/pinch gestures and default touch scrolling; menus remain scrollable. Cancellation, focus loss, rotation and sinking reset held controls. Physical iOS Safari testing is still recommended because desktop viewport testing does not reproduce every mobile browser gesture.
 
@@ -48,9 +48,9 @@ Each upgrade stacks up to nine times. Missing the target still lets you proceed.
 
 ## Earth chart and repairs
 
-The chart uses simplified real continent outlines from [Natural Earth 1:110m land](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson), which is [public domain](https://www.naturalearthdata.com/about/terms-of-use/). The geometry is embedded in the game. Coastlines block ships and cannonballs; route generation checks for navigable water. The world uses a 2:1 width-to-height equirectangular chart, with the same longitude/latitude scale at the equator and a matching minimap. The chart covers the full latitude range, without artificial polar ocean margins. Longitude wraps across the date line. Crossing a pole reflects latitude, shifts longitude by 180 degrees and reverses north/south heading; the Arctic does not connect directly to Antarctica. Terrain rendering, ship/projectile movement, distances and territory follow this topology. It remains a flat gameplay projection.
+The chart uses simplified real continent outlines from [Natural Earth 1:110m land](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson), which is [public domain](https://www.naturalearthdata.com/about/terms-of-use/). The geometry is embedded in the game. Coastlines block ships and cannonballs; route generation checks for navigable water. The world uses a 2:1 width-to-height equirectangular chart, with the same longitude/latitude scale at the equator and a matching minimap. The chart covers the full latitude range, without artificial polar ocean margins. Longitude wraps across the date line. Crossing a pole reflects latitude, shifts longitude by 180 degrees and reverses north/south heading; the Arctic does not connect directly to Antarctica. Terrain rendering, ship/projectile movement, distances and territory follow this topology. The camera keeps its continuous unfolded orientation across a pole, so the world continues upside down without snapping the board. Held touch direction and keyboard steering follow the screen orientation. It remains a flat gameplay projection.
 
-The Bering Strait, Canada–Greenland route (Davis Strait/Baffin Bay), and Northwest Passage are deliberately widened in both the visible coastlines and collision map to accommodate oversized game boats. These are navigable game channels, not a geographically exact sailing chart.
+The Bering Strait, Canada–Greenland route (Davis Strait/Baffin Bay), and Northwest Passage are deliberately widened in both the visible coastlines and collision map to accommodate oversized game boats. Additional routes open around the Philippines, Madagascar and the UK. Small coastal notches are rounded and tiny islets removed from both artwork and collisions. Coast contact slides along an open axis, and player boats retain at least 28% sailing efficiency into the wind so they can escape enclosed waters. These are navigable game channels, not a geographically exact sailing chart.
 
 Sail through your own colored HOME dock ring for instant full repair, including upgraded hull capacity. No anchoring or slowing required. Other colors do not repair your boat. Bots use their own colored docks.
 
