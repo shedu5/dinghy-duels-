@@ -64,8 +64,8 @@ The HUD shows cargo slots (1/2 or 2/2) and both boxes appear on the boat. HOME b
 
 Open **HARBOR PUZZLES · OPEN SHORTCUTS** on the voyage map at any time, including when a bonus or upgrade is pending. From level 2 onward, anchoring inside your HOME harbor also opens the optional puzzle menu once per visit. The tutorial keeps its original anchor/fire lesson.
 
-- **Panama — unthread the rope:** drag the gold loose end into the loop lying on top at the crossings. Tap the labeled loop buttons as an accessible alternative. Three released loops open the canal. This is a stylized rope-order puzzle, not a physics simulation of a named sailing knot.
-- **Suez — harbor lock training:** match the chamber to the high western basin, admit the boat, close the gate, drain to the eastern level, then let the boat out. Water cannot change with a gate open. This fictional harbor training challenge earns the Suez route unlock; it does not model real Suez Canal infrastructure.
+- **Panama — one draggable rope:** pull either end or any round bend. The whole connected rope redraws as you drag. Clear all crossings and separate overlapping bends to untangle it. Undo, Restart and highlighted-crossing hints are available. This is a spatial rope-untangling puzzle, not a simulation of real knot friction.
+- **Suez — color sorting:** five bottles, three colors, four layers per bottle. Tap a source and destination to pour the top matching color into an empty bottle or onto the same color, subject to remaining space. Fill each non-empty bottle with one color. Undo, Restart and solution-based hints are available. Colors also have distinct symbols.
 
 Both puzzles have hints and no timer. Mission time, ships, storms and combat pause while the panel is open; closing an unfinished puzzle resumes play without a penalty. Solved routes remain open across levels and reloads in this browser's saved voyage. Replays never revoke an unlock. Clearing browser storage removes this local save.
 
@@ -81,4 +81,4 @@ node tests/gameplay.cjs
 
 Checks cover the enemy-free, untimed tutorial and its completion sequence, Arctic treasure placement, hull clearance along northern channels, polar/date-line crossings, cannonball hits across poles, territory across poles, all ten mission setups and simulations, Earth navigation, objective success/failure, merchant routes, storm warnings, boss armor, treasure collection/banking, instant repair, bonus reward idempotency, persisted upgrades, held fire, pointer isolation and touch-gesture guards. Browser checks cover the phone layout, title, gameplay and upgrade flow. Local QA fixtures are not deployed.
 
-Puzzle checks cover pause/cancel, incorrect moves, complete solutions, save/reload persistence, navigable unlocked routes, coastal clearance, and browser interaction using drag and tap controls.
+Puzzle checks cover pause/cancel, invalid pours, rope crossings, undo, complete solutions, save/reload persistence, navigable unlocked routes, coastal clearance, and browser interaction using drag and tap controls.
