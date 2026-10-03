@@ -52,13 +52,24 @@ The chart uses simplified real continent outlines from [Natural Earth 1:110m lan
 
 The Bering Strait, Canada–Greenland route (Davis Strait/Baffin Bay), and Northwest Passage are deliberately widened in both the visible coastlines and collision map to accommodate oversized game boats. Additional routes open around the Philippines, Madagascar and the UK. Small coastal notches are rounded and tiny islets removed from both artwork and collisions. Coast contact slides along an open axis, and player boats retain at least 28% sailing efficiency into the wind so they can escape enclosed waters. These are navigable game channels, not a geographically exact sailing chart.
 
-Sail through your own colored HOME dock ring for instant full repair, including upgraded hull capacity. No anchoring or slowing required. Other colors do not repair your boat. Bots use their own colored docks.
+Each captain is assigned a named coastal harbor near the mission region. The repair ring sits in navigable water beside land, connected by a pier. Sail through your own colored HOME harbor ring for instant full repair, including upgraded hull capacity. No anchoring or slowing required. Other colors do not repair your boat. Bots use their own colored docks.
 
 ## Treasure
 
 Each campaign mission includes six royal treasure chests in Arctic waters, plus local mission treasure (one guided chest in the tutorial). Chests have optional treasure pickups with visible gold pickup circles. A chest is collected automatically once the entire hull fits inside its circle; the boat's center need not touch the chest. Carry up to two boxes at a time and return HOME to bank it in your saved voyage total. Each mission permits up to eight banked treasure. Treasure is a collectible; ship upgrades come from bonus rounds.
 
 The HUD shows cargo slots (1/2 or 2/2) and both boxes appear on the boat. HOME banks both boxes together, subject to the mission banking limit. Sinking drops each box separately for another captain to collect after a one-second delay. A gold ring on the minimap marks cargo. Square chart markers show docks. The HUD points toward the mission objective and adds a HOME direction when carrying treasure or needing repairs.
+
+## Harbor puzzles and permanent shortcuts
+
+Open **HARBOR PUZZLES · OPEN SHORTCUTS** on the voyage map at any time, including when a bonus or upgrade is pending. From level 2 onward, anchoring inside your HOME harbor also opens the optional puzzle menu once per visit. The tutorial keeps its original anchor/fire lesson.
+
+- **Panama — unthread the rope:** drag the gold loose end into the loop lying on top at the crossings. Tap the labeled loop buttons as an accessible alternative. Three released loops open the canal. This is a stylized rope-order puzzle, not a physics simulation of a named sailing knot.
+- **Suez — harbor lock training:** match the chamber to the high western basin, admit the boat, close the gate, drain to the eastern level, then let the boat out. Water cannot change with a gate open. This fictional harbor training challenge earns the Suez route unlock; it does not model real Suez Canal infrastructure.
+
+Both puzzles have hints and no timer. Mission time, ships, storms and combat pause while the panel is open; closing an unfinished puzzle resumes play without a penalty. Solved routes remain open across levels and reloads in this browser's saved voyage. Replays never revoke an unlock. Clearing browser storage removes this local save.
+
+Opening a shortcut cuts a navigable channel through both the visible land and the collision map. The minimap marks Panama with **P** and Suez with **S** (gold locked, green open). Coastal repair remains instant and does not require solving a puzzle. Existing northern passages remain freely navigable.
 
 ## Development and checks
 
@@ -69,3 +80,5 @@ node tests/gameplay.cjs
 ```
 
 Checks cover the enemy-free, untimed tutorial and its completion sequence, Arctic treasure placement, hull clearance along northern channels, polar/date-line crossings, cannonball hits across poles, territory across poles, all ten mission setups and simulations, Earth navigation, objective success/failure, merchant routes, storm warnings, boss armor, treasure collection/banking, instant repair, bonus reward idempotency, persisted upgrades, held fire, pointer isolation and touch-gesture guards. Browser checks cover the phone layout, title, gameplay and upgrade flow. Local QA fixtures are not deployed.
+
+Puzzle checks cover pause/cancel, incorrect moves, complete solutions, save/reload persistence, navigable unlocked routes, coastal clearance, and browser interaction using drag and tap controls.

@@ -10,6 +10,7 @@
 <meta name="description" content="Dinghy Duels: an age-of-sail territory battle. Paint the sea with your wake, fire broadsides, rule the wind.">
 <style>[hidden]{display:none!important}html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 #minimap{height:auto!important;aspect-ratio:2/1}
+#puzzle{position:fixed;inset:0;z-index:50;overflow-y:auto;background:#061e2ef5;color:#f6e8c8;padding:20px;box-sizing:border-box;touch-action:pan-y}#puzzle[hidden]{display:none}.puzzle-panel{max-width:520px;margin:0 auto;text-align:center;padding-bottom:24px}.puzzle-panel h2{font-size:32px;margin:12px 0}.puzzle-panel p{font-size:17px;line-height:1.45}.puzzle-choice,.puzzle-actions button{background:#294958;border:1px solid #ccb278;color:#fff1d1;border-radius:10px;min-height:48px;padding:12px;font:inherit;cursor:pointer;touch-action:manipulation}.puzzle-choice{display:block;width:min(100%,460px);margin:12px auto}.puzzle-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.puzzle-actions button{flex:1;min-width:100px}.puzzle-actions button:disabled{opacity:.3}#knot-board{display:block;width:100%;max-width:360px;margin:auto;touch-action:none}#puzzle-message{min-height:50px;color:#ffdd89}.puzzle-success{font-size:27px;color:#a3ecc1;padding:36px 0}.lock-diagram{display:flex;gap:10px;align-items:stretch;margin:24px 0}.lock-diagram>div{flex:1;background:#10394d;padding:15px 5px;border:2px solid #b9a277;border-radius:8px;font-size:17px}.water-level{background:#58b8d6;margin-top:12px;border-radius:4px}#shortcut-status{font-size:12px;color:#d9cba8;margin-top:7px}
 </style>
 <style>
 .statusbox{width:100%;max-width:280px;font-size:14px;font-weight:700;text-align:center;text-shadow:0 1px 3px #000}
@@ -181,14 +182,14 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
     <div class="colors" id="colors" role="radiogroup" aria-label="Ship color"></div>
     <div class="shipname" id="shipname"></div>
     <canvas id="atlas" width="600" height="300" aria-label="Earth map with ten voyage locations"></canvas>
-    <div id="voyage-status"></div><p id="next-brief" style="max-width:440px;font-size:15px;line-height:1.4;margin:12px 0 0"></p>
+    <div id="voyage-status"></div><div id="shortcut-status"></div><button id="harbor-puzzles" class="puzzle-choice" type="button">HARBOR PUZZLES · OPEN SHORTCUTS</button><p id="next-brief" style="max-width:440px;font-size:15px;line-height:1.4;margin:12px 0 0"></p>
     <button class="cta" id="start" type="button">SAIL LEVEL 1</button>
     <details class="voyage-levels"><summary>THE TEN-LEVEL VOYAGE</summary><div id="level-list"></div></details>
     <div class="howto">
       <b>Steer</b><span>Drag on the sea toward the direction you want to sail. Release to hold course.</span>
       <b>Fire</b><span>Hold FIRE for steady broadsides. Use your other thumb to steer. ANCHOR stops your ship.</span>
       <b>Missions</b><span>Learn safely in level 1. Then capture islands, escort merchants, sink flagships, and dodge storms.</span>
-      <b>Repair</b><span>Sail through your colored HOME dock for full health.</span>
+      <b>Repair</b><span>Sail through your named coastal HOME harbor for full health. After level 1, anchor there for optional puzzles—or open HARBOR PUZZLES on the voyage map.</span>
       <b>Treasure</b><span>Carry up to two treasure boxes. Enter a gold circle to collect, then sail HOME to bank your cargo. Explore the Arctic for royal treasure.</span>
       <b>Bonus</b><span>Between levels, paint 5% of the Earth chart in 60 seconds to earn a permanent ship upgrade.</span>
     </div>
@@ -209,6 +210,7 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(54px,17vw,104
     <div class="btns"><button class="cta" id="again" type="button">SAIL AGAIN</button><button class="ghost" id="tomenu" type="button">Change colors</button></div>
   </div>
 </div>
+<section id="puzzle" hidden role="dialog" aria-modal="true" aria-labelledby="puzzle-title"><div class="puzzle-panel"><div class="eyebrow">OPTIONAL · GAME PAUSED</div><h2 id="puzzle-title">HARBOR PUZZLES</h2><div id="puzzle-content"></div><p id="puzzle-message" aria-live="polite"></p><div class="puzzle-actions"><button id="puzzle-hint">HINT</button><button id="puzzle-close">BACK TO VOYAGE</button></div></div></section>
 <script>
 (() => {
 'use strict';
@@ -286,8 +288,8 @@ const CHANNEL_RADIUS=55;
 function passageSegments(){const out=[];for(const route of PASSAGES)for(let i=1;i<route.points.length;i++){const a=geo(...route.points[i-1]),b=geo(...route.points[i]);out.push({a,b:{x:a.x+delta(b.x-a.x),y:b.y},radius:Math.max(30,route.radius||CHANNEL_RADIUS)});}return out;}
 const CHANNELS=passageSegments();
 for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<GRID;gx++){const x=(gx+.5)*CELL,y=(gy+.5)*CELL;if(CHANNELS.some(({a,b,radius})=>{const dx=b.x-a.x,dy=b.y-a.y,px=delta(x-a.x),py=y-a.y,t=clamp((px*dx+py*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(px-t*dx,py-t*dy)<radius;}))landMask[gy*GRID+gx]=0;}
-const landAt=(x,y)=>{const p=globePoint(x,y);return landMask[Math.floor(p.y/CELL)*GRID+Math.floor(p.x/CELL)]===1;};
-function seaAt(p,r=22){for(let dy=-r;dy<=r;dy+=CELL/2)for(let dx=-r;dx<=r;dx+=CELL/2)if(dx*dx+dy*dy<=r*r&&landAt(p.x+dx,p.y+dy))return false;return !landAt(p.x,p.y);}
+const landAt=(x,y)=>{const p=globePoint(x,y);return landMask[Math.floor(p.y/CELL)*GRID+Math.floor(p.x/CELL)]===1&&!SHORTCUTS.some(r=>voyage.unlocks[r.id]&&inShortcut(p.x,p.y,r));};
+function seaAt(p,r=22){for(let gy=Math.floor((p.y-r)/CELL);gy<=Math.floor((p.y+r)/CELL);gy++)for(let gx=Math.floor((p.x-r)/CELL);gx<=Math.floor((p.x+r)/CELL);gx++){const x=gx*CELL,y=gy*CELL,dx=Math.max(x-p.x,0,p.x-x-CELL),dy=Math.max(y-p.y,0,p.y-y-CELL);if(dx*dx+dy*dy<=r*r&&landAt(x+CELL/2,y+CELL/2))return false;}return true;}
 function oceanSpot(p,r=35){for(let d=0;d<900;d+=18)for(let i=0;i<(d?32:1);i++){const q=globePoint(p.x+Math.cos(i*TAU/32)*d,p.y+Math.sin(i*TAU/32)*d);if(seaAt(q,r))return q;}return geo(-140,0);}
 function seaLine(a,b,r=25){const {x:dx,y:dy}=globeOffset(a,b),n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/12));for(let i=0;i<=n;i++)if(!seaAt({x:a.x+dx*i/n,y:a.y+dy*i/n},r))return false;return true;}
 let earthCanvas=null;
@@ -296,6 +298,7 @@ function earthImage(){
  c.fillStyle='#718b54';c.strokeStyle='#decfa4';c.lineWidth=5;
  for(const ring of EARTH){c.beginPath();ring.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();c.fill();c.stroke();}
  c.save();c.globalCompositeOperation='destination-out';c.lineWidth=CHANNEL_RADIUS*2;c.lineCap='round';for(const {a,b,radius} of CHANNELS)for(const ox of [-WORLD,0,WORLD]){c.lineWidth=radius*2;c.beginPath();c.moveTo(a.x+ox,a.y);c.lineTo(b.x+ox,b.y);c.stroke();}c.restore();
+ eraseShortcuts(c);
  return earthCanvas;
 }
 // Text is independent of terrain reflection, including the far side visible over a pole.
@@ -319,10 +322,55 @@ const LEVELS=[
  {name:'Four Beacon Lock',type:'capture',region:'Central Pacific',lon:-140,lat:5,time:180,enemies:3,count:4,hold:4},
  {name:'The Storm Admiral',type:'flagship',region:'North Pacific',lon:-155,lat:28,time:180,enemies:3,hp:360,storm:1,boss:true}
 ];
-let voyage={next:0,completed:0,pendingBonus:false,credits:0,treasure:0,upgrades:{hull:0,cannon:0,speed:0}};
-try{const v=JSON.parse(store.get('voyage-v1','null'));if(v&&typeof v==='object'){for(const k of ['next','completed','credits'])voyage[k]=clamp(Math.floor(Number(v[k])||0),0,k==='next'?9:10);voyage.pendingBonus=!!v.pendingBonus;voyage.treasure=Math.max(0,Math.floor(Number(v.treasure)||0));for(const k of ['hull','cannon','speed'])voyage.upgrades[k]=clamp(Math.floor(Number(v.upgrades?.[k])||0),0,9);}}catch(_){}
+let voyage={next:0,completed:0,pendingBonus:false,credits:0,treasure:0,unlocks:{panama:false,suez:false},upgrades:{hull:0,cannon:0,speed:0}};
+try{const v=JSON.parse(store.get('voyage-v1','null'));if(v&&typeof v==='object'){for(const k of ['next','completed','credits'])voyage[k]=clamp(Math.floor(Number(v[k])||0),0,k==='next'?9:10);voyage.pendingBonus=!!v.pendingBonus;for(const id of ['panama','suez'])voyage.unlocks[id]=v.unlocks?.[id]===true;voyage.treasure=Math.max(0,Math.floor(Number(v.treasure)||0));for(const k of ['hull','cannon','speed'])voyage.upgrades[k]=clamp(Math.floor(Number(v.upgrades?.[k])||0),0,9);}}catch(_){}
 let mode='demo',mission=null,resultAction='menu',nextPlayerShot=0;
 function saveVoyage(){store.set('voyage-v1',JSON.stringify(voyage));}
+// Optional harbor puzzles. Unlocks belong to the saved voyage, never to a single level.
+const SHORTCUTS=[
+ {id:'panama',name:'Panama Canal',kind:'knot',points:[[-84,5],[-80,8.5],[-77,12]],radius:34},
+ {id:'suez',name:'Suez Canal',kind:'locks',points:[[30,34],[32,30],[35,26]],radius:32}
+];
+function shortcutSegments(route){return route.points.slice(1).map((p,i)=>({a:geo(...route.points[i]),b:geo(...p)}));}
+function inShortcut(x,y,route){return shortcutSegments(route).some(({a,b})=>{const dx=delta(b.x-a.x),dy=b.y-a.y,px=delta(x-a.x),py=y-a.y,t=clamp((px*dx+py*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(px-t*dx,py-t*dy)<route.radius;});}
+function eraseShortcuts(c){c.save();c.globalCompositeOperation='destination-out';c.lineCap='round';for(const route of SHORTCUTS)if(voyage.unlocks[route.id]){c.lineWidth=route.radius*2;for(const {a,b} of shortcutSegments(route)){c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();}}c.restore();}
+const PORT_SITES=[['California',-123,38],['Mexico',-106,20],['Cuba',-79,22],['Brazil',-38,-12],['Patagonia',-70,-48],['Britain',-5,57],['West Africa',-17,17],['Cape Town',18,-34],['Madagascar',48,-18],['India',73,17],['Japan',140,36],['Australia',113,-24]];
+let harborCache=null;
+function coastalPorts(){if(harborCache)return harborCache;harborCache=PORT_SITES.map(([name,lon,lat])=>{
+ const origin=geo(lon,lat);let best=null;
+ for(let r=18;r<=240&&!best;r+=12)for(let i=0;i<32&&!best;i++){
+  const p=globePoint(origin.x+Math.cos(i*TAU/32)*r,origin.y+Math.sin(i*TAU/32)*r);if(!seaAt(p,34))continue;
+  for(let j=0;j<24;j++){const shore=globePoint(p.x+Math.cos(j*TAU/24)*60,p.y+Math.sin(j*TAU/24)*60);if(landAt(shore.x,shore.y)){best={...p,name,shore};break;}}
+ }
+ if(!best)throw new Error('No coastal harbor for '+name);return best;
+ });return harborCache;}
+function assignHarbors(center){const ports=coastalPorts().slice().sort((a,b)=>distanceTo(center,a)-distanceTo(center,b));docks=[];ships.forEach((s,i)=>{const p=ports[i%ports.length],d={...p,owner:s.owner,color:s.color};s.home=d;docks.push(d);});}
+let puzzleReturn='title',puzzle=null,harborOffered=false;
+function openPuzzles(){if(state==='puzzle')return;Input.reset();puzzleReturn=state==='play'?'play':state==='results'?'results':'title';state='puzzle';puzzle=null;showScreen('puzzle');renderPuzzle();}
+function closePuzzles(){Input.reset();state=puzzleReturn;showScreen(state==='play'?null:state);puzzle=null;refreshVoyage();}
+function selectPuzzle(id){const route=SHORTCUTS.find(r=>r.id===id);if(!route)return;puzzle={route,step:0,mistakes:0,level:0,boat:'west',west:false,east:false,solved:false};renderPuzzle();}
+function puzzleMessage(text){$('puzzle-message').textContent=text;}
+function finishPuzzle(){if(!puzzle||puzzle.solved)return;puzzle.solved=true;voyage.unlocks[puzzle.route.id]=true;saveVoyage();earthCanvas=null;harborCache=null;if(terr)terr=new Territory();renderPuzzle();SFX.bell();}
+function knotMove(loop){if(!puzzle||puzzle.route.kind!=='knot'||puzzle.solved)return;const order=[2,0,1];if(loop!==order[puzzle.step]){puzzle.mistakes++;puzzleMessage('That loop is pinned underneath. Try the loop lying over the others, or use Hint.');return;}puzzle.step++;if(puzzle.step===3)finishPuzzle();else{renderPuzzle();puzzleMessage('One loop free. Find the next top loop and pull the loose end through it.');}}
+function lockMove(action){if(!puzzle||puzzle.route.kind!=='locks'||puzzle.solved)return;const p=puzzle;
+ if(action==='fill'||action==='drain'){if(p.west||p.east){puzzleMessage('Close both gates before changing the water level.');return;}p.level=clamp(p.level+(action==='fill'?1:-1),0,2);}
+ if(action==='west'){if(!p.west&&(p.level!==2||p.east)){puzzleMessage('Match the high western water level and close the other gate first.');return;}p.west=!p.west;if(p.west&&p.boat==='west')p.boat='chamber';}
+ if(action==='east'){if(!p.east&&(p.level!==0||p.west)){puzzleMessage('Match the low eastern water level and close the other gate first.');return;}p.east=!p.east;if(p.east&&p.boat==='chamber'){finishPuzzle();return;}}
+ renderPuzzle();}
+function puzzleHint(){if(!puzzle)return;if(puzzle.route.kind==='knot')puzzleMessage('Pull the gold loose end into loop '+['C','A','B'][puzzle.step]+'. It lies on top at the crossing.');else puzzleMessage(puzzle.east?'Close the eastern gate before filling the chamber.':puzzle.west?'Close the western gate before draining.':puzzle.boat==='west'?(puzzle.level<2?'Fill the chamber to level 2, matching the west side.':'Open the western gate to bring the boat inside.'):(puzzle.level>0?'Drain the closed chamber to level 0.':'Open the eastern gate to finish.'));}
+function knotArt(){const p=puzzle,order=[2,0,1],done=order.slice(0,p.step),top=order[p.step],colors=['#64c9d3','#eb8ea4','#e5bd68'],centers=[[110,120],[230,120],[170,195]];
+ const path=i=>{const [x,y]=centers[i];return `<ellipse cx="${x}" cy="${y}" rx="68" ry="62" fill="none" stroke="#092733" stroke-width="21"/><ellipse cx="${x}" cy="${y}" rx="68" ry="62" fill="none" stroke="${colors[i]}" stroke-width="13"/><text x="${x}" y="${y+5}" text-anchor="middle" fill="#fff4d6" font-size="23">${'ABC'[i]}</text>`;};
+ return `<svg id="knot-board" viewBox="0 0 340 310" role="img" aria-label="Three overlapping rope loops. Drag the gold loose end into the top loop; tap loop buttons as an alternative."><path d="M40 275 Q90 295 110 235" fill="none" stroke="#e5bd68" stroke-width="13"/>${[0,1,2].filter(i=>!done.includes(i)&&i!==top).map(path).join('')}${path(top)}<circle id="rope-tip" cx="40" cy="275" r="23" fill="#e5bd68" stroke="#fff1bf" stroke-width="3"/><text x="70" y="284" fill="#fff1bf" font-size="15">LOOSE END · DRAG ME</text></svg>`;}
+function setupKnotDrag(){const board=$('knot-board');let pointer=null;board.addEventListener('pointerdown',e=>{const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*340,y=(e.clientY-r.top)/r.height*310;if(pointer!==null||Math.hypot(x-40,y-275)>40)return;e.preventDefault();pointer=e.pointerId;board.setPointerCapture(pointer);});board.addEventListener('pointermove',e=>{if(e.pointerId!==pointer)return;e.preventDefault();const r=board.getBoundingClientRect(),tip=board.querySelector('#rope-tip');tip.setAttribute('cx',clamp((e.clientX-r.left)/r.width*340,0,340));tip.setAttribute('cy',clamp((e.clientY-r.top)/r.height*310,0,310));});board.addEventListener('pointerup',e=>{if(e.pointerId!==pointer)return;pointer=null;e.preventDefault();const tip=board.querySelector('#rope-tip');tip.setAttribute('cx',40);tip.setAttribute('cy',275);const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*340,y=(e.clientY-r.top)/r.height*310;const centers=[[110,120],[230,120],[170,195]],i=centers.findIndex(([cx,cy])=>Math.hypot(x-cx,y-cy)<48);if(i>=0)knotMove(i);else puzzleMessage('Release the loose end inside one of the lettered loops.');});board.addEventListener('pointercancel',()=>{pointer=null;const tip=board.querySelector('#rope-tip');tip.setAttribute('cx',40);tip.setAttribute('cy',275);});}
+function renderPuzzle(){const box=$('puzzle-content');$('puzzle-message').textContent='';
+ if(!puzzle){$('puzzle-title').textContent='HARBOR PUZZLES';box.innerHTML='<p>Open a shortcut once and keep it for every later level. Optional, with no timer. Sailing and combat are paused.</p>'+SHORTCUTS.map(r=>`<button class="puzzle-choice" id="choose-${r.id}">${r.name} · ${voyage.unlocks[r.id]?'OPEN · REPLAY':r.kind==='knot'?'UNTIE THE KNOT':'OPERATE THE LOCKS'}</button>`).join('');for(const r of SHORTCUTS)$('choose-'+r.id).addEventListener('click',()=>selectPuzzle(r.id));$('puzzle-hint').hidden=true;return;}
+ const p=puzzle;$('puzzle-title').textContent=p.route.name;$('puzzle-hint').hidden=p.solved;
+ if(p.solved){box.innerHTML='<div class="puzzle-success">✓ PASSAGE OPEN</div><p>This shortcut is saved and stays open throughout your voyage.</p><button id="puzzle-another" class="puzzle-choice">OTHER HARBOR PUZZLES</button>';$('puzzle-another').addEventListener('click',()=>{puzzle=null;renderPuzzle();});return;}
+ if(p.route.kind==='knot'){box.innerHTML=`<p>Unthread the rope: pull the gold loose end into the loop lying on top at the crossings. You can also tap a loop button.</p>${knotArt()}<div class="puzzle-actions">${[0,1,2].map(i=>`<button id="loop-${i}" ${[2,0,1].slice(0,p.step).includes(i)?'disabled':''}>LOOP ${'ABC'[i]}</button>`).join('')}</div><p>${p.step}/3 loops released</p>`;for(let i=0;i<3;i++)$('loop-'+i).addEventListener('click',()=>knotMove(i));setupKnotDrag();}
+ else{box.innerHTML=`<p>Complete this harbor training challenge to unlock Suez. Move the merchant from the high western basin to the low eastern basin. Match water levels before opening a gate.</p><div class="lock-diagram"><div>WEST · 2<br>${p.boat==='west'?'⛵':'≈'}</div><div>CHAMBER · ${p.level}<br>${p.boat==='chamber'?'⛵':'≈'}<div class="water-level" style="height:${12+p.level*24}px"></div></div><div>EAST · 0<br>≈</div></div><p>West gate: ${p.west?'OPEN':'CLOSED'} · East gate: ${p.east?'OPEN':'CLOSED'}</p><div class="puzzle-actions">${[['fill','FILL +1'],['drain','DRAIN −1'],['west','WEST GATE'],['east','EAST GATE']].map(([id,label])=>`<button id="lock-${id}">${label}</button>`).join('')}</div>`;for(const action of ['fill','drain','west','east'])$('lock-'+action).addEventListener('click',()=>lockMove(action));}
+}
+function drawShortcuts(){for(const r of SHORTCUTS){const p=geo(...r.points[1]);ctx.strokeStyle=voyage.unlocks[r.id]?'#91e4aa':'#e5bd68';ctx.lineWidth=3;ctx.setLineDash(voyage.unlocks[r.id]?[]:[5,5]);for(const {a,b} of shortcutSegments(r)){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.font='bold 12px sans-serif';worldText(r.name.toUpperCase()+' · '+(voyage.unlocks[r.id]?'OPEN':'HARBOR PUZZLE'),p.x,p.y-42);}}
+
 const difficulty=i=>i<3?'EASY':i<6?'MEDIUM':i<9?'HARD':'EXPERT';
 function levelBrief(l){return l.type==='tutorial'?'No enemies or time limit. Steer to the gold circle, collect treasure, then sail HOME. Practice anchoring and firing.':l.type==='flagship'?(l.boss?'Sink the admiral when its armor opens. Dodge storm strikes.':'Sink the marked flagship before time runs out.'):l.type==='escort'?'Stay near the merchant to guide it through the numbered waypoints. Protect its hull.':l.type==='capture'?'Anchor inside each numbered island ring, in order, until its signal locks.':'Survive until the timer ends. Leave red storm circles before they strike.';}
 function nearbySea(center,dx,dy){const p=oceanSpot({x:center.x+dx,y:center.y+dy},32);return p;}
@@ -342,7 +390,7 @@ function prepareMission(index){
  player.maxHp=100+voyage.upgrades.hull*20;player.hp=player.maxHp;player.power=1+voyage.upgrades.cannon*.15;player.speedBoost=1+voyage.upgrades.speed*.07;
  ships=ships.slice(0,l.enemies+1);
  ships.slice(1).forEach((s,i)=>{Object.assign(s,nearbySea(center,120+i*70,-90+i*55));s.maxHp=80+index*4;s.hp=s.maxHp;s.brain.aggro=.35+index*.04;});
- docks=[{...nearbySea(center,-240,120),owner:player.owner,color:player.color}];player.home=docks[0];ships.slice(1).forEach((s,i)=>{s.home={...nearbySea(center,240+i*90,-120),owner:s.owner,color:s.color};docks.push(s.home);});
+ assignHarbors(center);
  if(l.type==='flagship'){const s=ships[1];s.flagship=true;s.name=l.boss?'Storm Admiral':'Flagship';s.maxHp=l.hp;s.hp=l.hp;mission.flagship=s;}
  if(l.type==='capture'){mission.flags=missionPoints(center,l.count).map((p,i)=>({...p,label:i+1,charge:0,captured:false}));}
  if(l.type==='escort'){
@@ -352,7 +400,7 @@ function prepareMission(index){
  // Arctic treasure is available throughout the voyage, not only near a mission.
  for(const coords of [[-165,77],[-125,83],[-65,82],[0,84],[65,82],[135,82]]){const p=oceanSpot(geo(...coords),85);treasure.push({...p,value:4,readyAt:0,arctic:true});}
  if(l.type==='tutorial'){
-  const start=oceanSpot(geo(l.lon,l.lat),100);Object.assign(player,start);Object.assign(player.home,start);player.heading=0;wind.dir=Math.PI/2;wind.tDir=wind.dir;wind.vx=0;wind.vy=1;wind.timer=9999;
+  const start={x:player.home.x,y:player.home.y};Object.assign(player,start);player.heading=0;wind.dir=Math.PI/2;wind.tDir=wind.dir;wind.vx=0;wind.vy=1;wind.timer=9999;
   let target=null;for(let i=0;i<64;i++){const a=i*TAU/64,q=globePoint(start.x+Math.cos(a)*260,start.y+Math.sin(a)*260);if(seaAt(q,85)&&seaLine(start,q,32)){target=q;break;}}
   if(!target)target=missionPoints(start,1)[0];mission.trainingChest={...target,value:2,readyAt:0};treasure=treasure.filter(t=>t.arctic);treasure.unshift(mission.trainingChest);player.heading=bearing(player,target);wind.dir=norm(player.heading+Math.PI/2);wind.tDir=wind.dir;wind.vx=Math.cos(wind.dir);wind.vy=Math.sin(wind.dir);
  }
@@ -360,7 +408,7 @@ function prepareMission(index){
  matchT=l.time;cam.follow=player;cam.x=player.x;cam.y=player.y;
 }
 function beginRound(nextMode,index=voyage.next){
- cam.inverted=false;mode=nextMode;mission=null;setupWorld(true,chosen);nextPlayerShot=0;
+ harborOffered=false;cam.inverted=false;mode=nextMode;mission=null;setupWorld(true,chosen);nextPlayerShot=0;
  if(mode==='campaign')prepareMission(index);else{matchT=60;player.maxHp=100+voyage.upgrades.hull*20;player.hp=player.maxHp;player.power=1+voyage.upgrades.cannon*.15;player.speedBoost=1+voyage.upgrades.speed*.07;}
  buildShareBar();state='play';showScreen(null);$('sharebar').hidden=mode!=='bonus';SFX.init();SFX.resume();
  toast(mode==='bonus'?'BONUS · PAINT THE SEA':'LEVEL '+(index+1),mode==='bonus'?'Claim 5% in 60 seconds to earn an upgrade.':levelBrief(LEVELS[index]));
@@ -433,6 +481,7 @@ function drawMission(t){
 function drawAtlas(){const c=$('atlas').getContext('2d');c.fillStyle='#0c435c';c.fillRect(0,0,600,300);c.drawImage(earthImage(),0,0,600,300);c.save();c.scale(600/WORLD,300/WORLD_H);drawMapLabels(c);c.restore();LEVELS.forEach((l,i)=>{const p=geo(l.lon,l.lat),x=p.x/WORLD*600,y=p.y/WORLD_H*300;c.fillStyle=i<voyage.completed?'#8fe4a0':i===voyage.next?'#ffe197':'#a5aaba';c.beginPath();c.arc(x,y,6,0,TAU);c.fill();c.font='bold 12px sans-serif';c.fillText(String(i+1),x+8,y-3);});}
 function refreshVoyage(){
  $('start').textContent=voyage.credits>0?'CHOOSE UPGRADE':voyage.pendingBonus?'PLAY BONUS':voyage.completed===10?'REPLAY FINAL LEVEL':'SAIL LEVEL '+(voyage.next+1);
+ $('shortcut-status').textContent=SHORTCUTS.map(r=>r.name+': '+(voyage.unlocks[r.id]?'OPEN':'LOCKED')).join(' · ');
  $('voyage-status').textContent=voyage.completed+'/10 complete · Hull +'+voyage.upgrades.hull*20+' · Cannons +'+voyage.upgrades.cannon*15+'% · Speed +'+voyage.upgrades.speed*7+'% · Treasure '+voyage.treasure;
  $('next-brief').textContent=voyage.pendingBonus?'Bonus: claim 5% of the sea to earn your next ship upgrade.':LEVELS[voyage.next].region+' · '+levelBrief(LEVELS[voyage.next]);
  const list=$('level-list');list.innerHTML='';LEVELS.forEach((l,i)=>{const b=document.createElement('button');b.type='button';b.disabled=i>voyage.next||voyage.pendingBonus||voyage.credits>0;b.textContent=(i<voyage.completed?'✓ ':'')+(i+1)+'. '+l.name+' · '+difficulty(i);b.addEventListener('click',()=>beginRound('campaign',i));list.appendChild(b);});drawAtlas();
@@ -813,8 +862,8 @@ const totalScore = s => terr.share(s.owner) * 100 + s.gold;
 const distanceTo = (a, b) => dist(a.x, a.y, b.x, b.y);
 function setupAdventure() {
   treasure=[];combatText=[];kraken=null;docks=[];
-  const ports=[[-40,25],[-135,5],[75,-20],[-15,-35],[155,18]];
-  ships.forEach((s,i)=>{const p=oceanSpot(geo(...ports[i%ports.length]),110);const d={...p,owner:s.owner,color:s.color};docks.push(d);s.home=d;s.cargo=null;s.gold=0;s.deliveries=0;s.repairing=false;s.repairFlash=0;s.lastDamage=-10;});
+  assignHarbors(geo(-40,25));
+  ships.forEach(s=>{s.cargo=null;s.gold=0;s.deliveries=0;s.repairing=false;s.repairFlash=0;s.lastDamage=-10;});
 }
 function floatText(s, text, color = '#fff1bf') { combatText.push({ x: s.x, y: s.y - 42, text, color, life: 1.2 }); }
 function krakenDanger(s) {
@@ -874,8 +923,9 @@ function drawAdventure(t) {
   for (const d of docks) {
     const repairingHere = ships.some(s => !s.sunk && s.repairing && distanceTo(s,d) <= DOCK_RADIUS);
     ctx.fillStyle = repairingHere ? 'rgba(100,255,165,.25)' : 'rgba(100,240,200,.08)'; ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.setLineDash([8,7]); ctx.beginPath(); ctx.arc(d.x,d.y,DOCK_RADIUS,0,TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    if(d.shore){ctx.strokeStyle='#b99a68';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(d.shore.x,d.shore.y);ctx.lineTo(d.x,d.y);ctx.stroke();}
     ctx.fillStyle = '#65482a'; ctx.fillRect(d.x-24,d.y-10,48,20); ctx.strokeStyle='#dfc99a'; ctx.strokeRect(d.x-24,d.y-10,48,20);
-    ctx.fillStyle = '#fff1bf'; worldText(player && d.owner === player.owner ? 'HOME · FULL REPAIR' : 'RIVAL DOCK',d.x,d.y-25);
+    ctx.fillStyle = '#fff1bf'; worldText(player && d.owner === player.owner ? 'HOME · '+d.name+' · REPAIR' : d.name+' · RIVAL',d.x,d.y-25);
     ctx.fillStyle = d.color; ctx.fillRect(d.x-3,d.y-10,6,20);
   }
   if (kraken && kraken.phase !== 'gone') {
@@ -1072,6 +1122,7 @@ function setupWorld(withPlayer, colorIdx) {
   matchT = MATCH_TIME; finalCalled = false; simTime = 0;
 }
 function step(dt) {
+  if(state==='puzzle')return;
   simTime += dt;
   updateWind(dt);
   if (state === 'play') {
@@ -1082,6 +1133,7 @@ function step(dt) {
   }
   for (const s of ships) { if (s.brain) s.brain.update(dt); updateShip(s, dt); }
   shipCollisions(dt); updateBalls(dt); updateParticles(dt); updateAdventure(dt);updateCampaign(dt);
+  if(state==='play'&&mode==='campaign'&&mission.level.type!=='tutorial'){const atHome=player.anchored&&distanceTo(player,player.home)<DOCK_RADIUS;if(!atHome)harborOffered=false;else if(!harborOffered){harborOffered=true;openPuzzles();}}
   if (state === 'title') { cam.switchT -= dt; if (cam.switchT <= 0) { cam.switchT = rand(7, 11); const alive = ships.filter(s => !s.sunk && s !== cam.follow); if (alive.length) cam.follow = alive[Math.floor(rand(alive.length))]; } }
   const f = cam.follow; if (f) {
     const look = f.sunk ? 0 : 50 * clamp(f.speed / MAX_SPEED, 0, 1);
@@ -1094,7 +1146,7 @@ function step(dt) {
 }
 
 let chosen = clamp(parseInt(store.get('color', '0'), 10) || 0, 0, COLORS.length - 1);
-function showScreen(id) { for (const n of ['title', 'countdown', 'results']) $(n).hidden = n !== id; $('hud').hidden = !(id === null || id === 'countdown'); }
+function showScreen(id) { for (const n of ['title', 'countdown', 'results','puzzle']) $(n).hidden = n !== id; $('hud').hidden = !(id === null || id === 'countdown'); }
 function toMenu() {
   cam.inverted=false;mode='demo';mission=null;state = 'title'; setupWorld(false, 0); showScreen('title'); refreshTitle();
 }
@@ -1196,7 +1248,7 @@ function render(t) {
     const {ox,oy,flip,vx0,vy0}=chartTile(ix,iy,cx,cy,vw,vh);
     ctx.save();ctx.translate(ox,oy);if(flip)ctx.scale(1,-1);
   worldTextFlipped=Boolean(flip)!==Boolean(cam.inverted);
-  drawAdventure(t);drawMission(t);
+  drawAdventure(t);drawMission(t);drawShortcuts();
   if (player && !player.sunk) drawArcs(player);
   const order = ships.slice().sort((a, b) => (a.isPlayer ? 1 : 0) - (b.isPlayer ? 1 : 0));
   for (const s of order) { if (s.x + 80 < vx0 || s.x - 80 > vx0 + vw || s.y + 80 < vy0 || s.y - 80 > vy0 + vh) continue; drawShip(s, t); }
@@ -1348,6 +1400,7 @@ function drawMinimap() {
   c.drawImage(earthImage(),0,0,S,MH);
   if(mode==='campaign'&&mission){c.font='bold 12px sans-serif';c.fillStyle='#ffe39a';for(const f of mission.flags)c.fillText(String(f.label),f.x*k,f.y*k);const t=missionTarget();if(t){c.strokeStyle='#fff';c.lineWidth=2;c.strokeRect(t.x*k-6,t.y*k-6,12,12);}}
   c.fillStyle = '#d9c48c'; for (const is of islands) { c.beginPath(); c.arc(is.x * k, is.y * k, is.r * k, 0, TAU); c.fill(); }
+  for(const route of SHORTCUTS){const p=geo(...route.points[1]);c.fillStyle=voyage.unlocks[route.id]?'#91e4aa':'#e5bd68';c.font='bold 10px sans-serif';c.fillText(route.id==='panama'?'P':'S',p.x*k,p.y*k);}
   for(const d of docks){c.strokeStyle=d.color;c.lineWidth=2;c.strokeRect(d.x*k-4,d.y*k-4,8,8);if(player&&d.owner===player.owner){c.fillStyle='#fff';c.font='bold 12px sans-serif';c.fillText('H',d.x*k-4,d.y*k-7);}}
   for(const t of treasure){if(simTime<t.readyAt)continue;c.fillStyle='#ffe078';c.fillRect(t.x*k-2,t.y*k-2,5,5);}
   if(kraken&&kraken.phase!=='gone'){c.strokeStyle='#ff737e';c.lineWidth=2;c.beginPath();c.arc(kraken.x*k,kraken.y*k,205*k,0,TAU);c.stroke();}
@@ -1369,6 +1422,7 @@ function boot(data) {
   const cs = $('colors');
   COLORS.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.i = i; b.style.setProperty('--c', c.hex); b.setAttribute('role', 'radio'); b.setAttribute('aria-label', c.name); b.setAttribute('aria-pressed', 'false'); b.addEventListener('pointerdown', () => { chosen = i; store.set('color', i); refreshTitle(); SFX.init(); SFX.ui(); }); cs.appendChild(b); });
   bind('start', startMatch); bind('again', continueVoyage); bind('tomenu', toMenu);
+  bind('harbor-puzzles',openPuzzles);bind('puzzle-close',closePuzzles);bind('puzzle-hint',puzzleHint);
   FireControl.init();installTouchGuard();
   for(const k of ['hull','cannon','speed'])bind('upgrade-'+k,()=>chooseUpgrade(k));
   bind('anchor', toggleAnchor);
