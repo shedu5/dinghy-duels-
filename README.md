@@ -52,7 +52,7 @@ The chart uses simplified real continent outlines from [Natural Earth 1:110m lan
 
 The Bering Strait, Canada–Greenland route (Davis Strait/Baffin Bay), and Northwest Passage are deliberately widened in both the visible coastlines and collision map to accommodate oversized game boats. Additional routes open around the Philippines, Madagascar and the UK. Small coastal notches are rounded and tiny islets removed from both artwork and collisions. Coast contact slides along an open axis, and player boats retain at least 28% sailing efficiency into the wind so they can escape enclosed waters. These are navigable game channels, not a geographically exact sailing chart.
 
-Each captain is assigned a named coastal harbor near the mission region. The repair ring sits in navigable water beside land, connected by a pier. Sail through your own colored HOME harbor ring for instant full repair, including upgraded hull capacity. No anchoring or slowing required. Other colors do not repair your boat. Bots use their own colored docks.
+Each captain is assigned a named coastal harbor near the mission region. City port locations stay fixed across all ten levels and canal unlocks; the assigned HOME city depends on the mission region. Each port is shown as a city label and a colored repair circle in navigable coastal water, without a pier or dock graphic. Sail through your own colored HOME harbor ring for instant full repair, including upgraded hull capacity. No anchoring or slowing required. Other colors do not repair your boat. Bots use their own colored docks.
 
 ## Treasure
 

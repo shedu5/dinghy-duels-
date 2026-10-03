@@ -5,13 +5,14 @@ const document={getElementById:id=>elements[id]||=el(),createElement:el,createTe
 const saved=new Map();const windowEvents={};const sandbox={document,window:{addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn),devicePixelRatio:1,innerWidth:720,innerHeight:786},localStorage:{getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)},navigator:{},performance:{now:()=>0},setTimeout:noop,setInterval:noop,clearInterval:noop,clearTimeout:noop,requestAnimationFrame:noop,getComputedStyle:()=>({fontFamily:'sans-serif'}),console,Math,Uint8Array,Int32Array};
 let source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];source=source.replace(/if \(window.claude && window.claude.hot && window.claude.hot.ready\)[\s\S]*?\}\)\(\);\s*$/,`globalThis.test={openPuzzles,closePuzzles,selectPuzzle,tickBowUnfurl,unfurlPoints,knotArt,bowDrag,bowRelease,bowPoints,pourResult,sortSolution,bottleTap,undoPuzzle,sortSolved,puzzleHint,SHORTCUTS,shortcutSegments,coastalPorts,get puzzle(){return puzzle},globePoint,globeOffset,crossPole,CHANNELS,dist,updateBalls,updateHUD,beginRound,LEVELS,seaAt,seaLine,geo,landAt,updateCampaign,chooseUpgrade,continueVoyage,FireControl,installTouchGuard,Input,controlPlayer,firePlayer,updateAdventure,updateShip,damage,step,render,endMatch,resize,wind,cam,delta,refreshVoyage,toMenu,boot,get voyage(){return voyage},get mission(){return mission},get ships(){return ships},get treasure(){return treasure},get balls(){return balls},get state(){return state},get terr(){return terr},get time(){return matchT},setTime(t){simTime=t}};})();`);
 vm.createContext(sandbox);vm.runInContext(source,sandbox);const g=sandbox.test;
+const fixedPorts=JSON.stringify(g.coastalPorts());
 
 g.boot({});
 assert.ok(Math.abs((g.geo(10,0).x-g.geo(0,0).x)-(g.geo(0,0).y-g.geo(0,10).y))<1e-9,'Map has equal longitude and latitude scale');
 function start(i=0){g.beginRound('campaign',i);return g.ships[0]}
 for(let i=0;i<10;i++){
  const s=start(i),m=g.mission;
- assert.equal(g.state,'play');assert.equal(m.index,i);
+ assert.equal(g.state,'play');assert.equal(m.index,i);assert.equal(JSON.stringify(g.coastalPorts()),fixedPorts,'City locations stay fixed across levels');
  for(const ship of g.ships)assert.ok(g.seaAt(ship,25),`Level ${i+1} ship spawn is sea`);
  for(const chest of g.treasure)assert.ok(g.seaAt(chest,60));
  let prev=m.center;for(const p of m.route){assert.ok(g.seaLine(prev,p,30));prev=p;}
@@ -98,3 +99,6 @@ s=start(4);s.x=s.home.x;s.y=s.home.y;s.speed=0;s.anchored=true;g.step(.01);asser
 console.log('PASS: optional harbor entry and resume');
 
 g.openPuzzles();g.selectPuzzle('panama');for(const [part,dy] of [['collar',-48],['loop',-54],['tail',-90]]){g.bowDrag(part,0,dy);g.bowRelease();}assert.ok(g.puzzle.solved);assert.equal(g.puzzle.unfurlProgress,0);const startShape=g.unfurlPoints(g.puzzle);g.tickBowUnfurl(1.6);assert.equal(g.puzzle.unfurlProgress,.5);assert.notDeepEqual(g.unfurlPoints(g.puzzle),startShape);g.tickBowUnfurl(1.6);assert.equal(g.puzzle.unfurlProgress,1);const straight=g.unfurlPoints(g.puzzle);assert.ok(straight.every((p,i)=>Math.abs(p[0])<1e-8&&Math.abs(p[2])<1e-8&&(i===0||p[1]>straight[i-1][1])));g.closePuzzles();g.tickBowUnfurl(1);assert.ok(g.voyage.unlocks.panama);console.log('PASS: continuous unfurl, straight final rope and safe close');
+
+assert.equal(JSON.stringify(g.coastalPorts()),fixedPorts,'Canal unlocks do not move city ports');
+console.log('PASS: fixed city port locations across all levels and canal unlocks');

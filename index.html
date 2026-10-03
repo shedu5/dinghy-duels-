@@ -289,8 +289,9 @@ const CHANNEL_RADIUS=55;
 function passageSegments(){const out=[];for(const route of PASSAGES)for(let i=1;i<route.points.length;i++){const a=geo(...route.points[i-1]),b=geo(...route.points[i]);out.push({a,b:{x:a.x+delta(b.x-a.x),y:b.y},radius:Math.max(30,route.radius||CHANNEL_RADIUS)});}return out;}
 const CHANNELS=passageSegments();
 for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<GRID;gx++){const x=(gx+.5)*CELL,y=(gy+.5)*CELL;if(CHANNELS.some(({a,b,radius})=>{const dx=b.x-a.x,dy=b.y-a.y,px=delta(x-a.x),py=y-a.y,t=clamp((px*dx+py*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(px-t*dx,py-t*dy)<radius;}))landMask[gy*GRID+gx]=0;}
+const baseLandAt=(x,y)=>{const p=globePoint(x,y);return landMask[Math.floor(p.y/CELL)*GRID+Math.floor(p.x/CELL)]===1;};
 const landAt=(x,y)=>{const p=globePoint(x,y);return landMask[Math.floor(p.y/CELL)*GRID+Math.floor(p.x/CELL)]===1&&!SHORTCUTS.some(r=>voyage.unlocks[r.id]&&inShortcut(p.x,p.y,r));};
-function seaAt(p,r=22){for(let gy=Math.floor((p.y-r)/CELL);gy<=Math.floor((p.y+r)/CELL);gy++)for(let gx=Math.floor((p.x-r)/CELL);gx<=Math.floor((p.x+r)/CELL);gx++){const x=gx*CELL,y=gy*CELL,dx=Math.max(x-p.x,0,p.x-x-CELL),dy=Math.max(y-p.y,0,p.y-y-CELL);if(dx*dx+dy*dy<=r*r&&landAt(x+CELL/2,y+CELL/2))return false;}return true;}
+function seaAt(p,r=22,isLand=landAt){for(let gy=Math.floor((p.y-r)/CELL);gy<=Math.floor((p.y+r)/CELL);gy++)for(let gx=Math.floor((p.x-r)/CELL);gx<=Math.floor((p.x+r)/CELL);gx++){const x=gx*CELL,y=gy*CELL,dx=Math.max(x-p.x,0,p.x-x-CELL),dy=Math.max(y-p.y,0,p.y-y-CELL);if(dx*dx+dy*dy<=r*r&&isLand(x+CELL/2,y+CELL/2))return false;}return true;}
 function oceanSpot(p,r=35){for(let d=0;d<900;d+=18)for(let i=0;i<(d?32:1);i++){const q=globePoint(p.x+Math.cos(i*TAU/32)*d,p.y+Math.sin(i*TAU/32)*d);if(seaAt(q,r))return q;}return geo(-140,0);}
 function seaLine(a,b,r=25){const {x:dx,y:dy}=globeOffset(a,b),n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/12));for(let i=0;i<=n;i++)if(!seaAt({x:a.x+dx*i/n,y:a.y+dy*i/n},r))return false;return true;}
 let earthCanvas=null;
@@ -335,13 +336,13 @@ const SHORTCUTS=[
 function shortcutSegments(route){return route.points.slice(1).map((p,i)=>({a:geo(...route.points[i]),b:geo(...p)}));}
 function inShortcut(x,y,route){return shortcutSegments(route).some(({a,b})=>{const dx=delta(b.x-a.x),dy=b.y-a.y,px=delta(x-a.x),py=y-a.y,t=clamp((px*dx+py*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(px-t*dx,py-t*dy)<route.radius;});}
 function eraseShortcuts(c){c.save();c.globalCompositeOperation='destination-out';c.lineCap='round';for(const route of SHORTCUTS)if(voyage.unlocks[route.id]){c.lineWidth=route.radius*2;for(const {a,b} of shortcutSegments(route)){c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();}}c.restore();}
-const PORT_SITES=[['California',-123,38],['Mexico',-106,20],['Cuba',-79,22],['Brazil',-38,-12],['Patagonia',-70,-48],['Britain',-5,57],['West Africa',-17,17],['Cape Town',18,-34],['Madagascar',48,-18],['India',73,17],['Japan',140,36],['Australia',113,-24]];
+const PORT_SITES=[['San Francisco',-122.4,37.8],['Manzanillo',-104.3,19.1],['Havana',-82.4,23.1],['Salvador',-38.5,-13],['Punta Arenas',-70.9,-53.2],['Liverpool',-3,53.4],['Dakar',-17.4,14.7],['Cape Town',18.4,-33.9],['Toamasina',49.4,-18.1],['Mumbai',72.8,19.1],['Tokyo',139.8,35.7],['Perth',115.9,-32]];
 let harborCache=null;
 function coastalPorts(){if(harborCache)return harborCache;harborCache=PORT_SITES.map(([name,lon,lat])=>{
  const origin=geo(lon,lat);let best=null;
  for(let r=18;r<=240&&!best;r+=12)for(let i=0;i<32&&!best;i++){
-  const p=globePoint(origin.x+Math.cos(i*TAU/32)*r,origin.y+Math.sin(i*TAU/32)*r);if(!seaAt(p,34))continue;
-  for(let j=0;j<24;j++){const shore=globePoint(p.x+Math.cos(j*TAU/24)*60,p.y+Math.sin(j*TAU/24)*60);if(landAt(shore.x,shore.y)){best={...p,name,shore};break;}}
+  const p=globePoint(origin.x+Math.cos(i*TAU/32)*r,origin.y+Math.sin(i*TAU/32)*r);if(!seaAt(p,34,baseLandAt))continue;
+  for(let j=0;j<24;j++){const shore=globePoint(p.x+Math.cos(j*TAU/24)*60,p.y+Math.sin(j*TAU/24)*60);if(baseLandAt(shore.x,shore.y)){best={...p,name,shore};break;}}
  }
  if(!best)throw new Error('No coastal harbor for '+name);return best;
  });return harborCache;}
@@ -941,10 +942,7 @@ function drawAdventure(t) {
   for (const d of docks) {
     const repairingHere = ships.some(s => !s.sunk && s.repairing && distanceTo(s,d) <= DOCK_RADIUS);
     ctx.fillStyle = repairingHere ? 'rgba(100,255,165,.25)' : 'rgba(100,240,200,.08)'; ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.setLineDash([8,7]); ctx.beginPath(); ctx.arc(d.x,d.y,DOCK_RADIUS,0,TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
-    if(d.shore){ctx.strokeStyle='#b99a68';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(d.shore.x,d.shore.y);ctx.lineTo(d.x,d.y);ctx.stroke();}
-    ctx.fillStyle = '#65482a'; ctx.fillRect(d.x-24,d.y-10,48,20); ctx.strokeStyle='#dfc99a'; ctx.strokeRect(d.x-24,d.y-10,48,20);
     ctx.fillStyle = '#fff1bf'; worldText(player && d.owner === player.owner ? 'HOME · '+d.name+' · REPAIR' : d.name+' · RIVAL',d.x,d.y-25);
-    ctx.fillStyle = d.color; ctx.fillRect(d.x-3,d.y-10,6,20);
   }
   if (kraken && kraken.phase !== 'gone') {
     const k=kraken, warning=k.phase==='warning';
